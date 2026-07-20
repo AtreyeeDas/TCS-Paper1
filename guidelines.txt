@@ -1,0 +1,198 @@
+Here is your blueprint for taking this entire architecture **completely offline**, setting up the Conda environment for your **Blackwell RTX PRO 5000 (`sm_120`)**, configuring the project structure, and directing all local file paths without regenerating the existing core code.
+
+---
+
+### **1. Conda Environment & Dependency Setup**
+
+Because you are running on an **NVIDIA Blackwell GPU with CUDA 13.0**, you must use PyTorch Nightly and strictly pin specific packages to avoid unpickling errors, missing GPU kernels, and package dependency conflicts.
+
+#### **Step 1: Create & Activate the Conda Environment**
+
+Open your Linux terminal and execute:
+
+```bash
+conda create -n cardio_care_ai python=3.10 -y
+conda activate cardio_care_ai
+
+```
+
+#### **Step 2: Install System-Level Phonemizer Backend**
+
+Stage 1 relies on `espeak-ng` to convert ASCII and Devanagari into the IPA bottleneck. Install it via your Linux package manager:
+
+```bash
+# For Ubuntu/Debian:
+sudo apt-get update && sudo apt-get install -y espeak-ng libespeak-ng-dev
+
+# For RHEL/CentOS/Fedora:
+sudo dnf install -y espeak-ng espeak-ng-devel
+
+```
+
+#### **Step 3: Install PyTorch Nightly (Blackwell Compatible)**
+
+Install the bleeding-edge PyTorch wheels to ensure your compute capability (`sm_120`) is recognized without throwing CUDA kernel panics:
+
+```bash
+pip install --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cu124
+
+```
+
+*(Note: PyTorch CUDA 12.4+ nightly wheels contain the PTX instructions required to drive CUDA 13.0 Blackwell hardware natively).*
+
+#### **Step 4: Install Core Python Dependencies with Strict Pins**
+
+Execute the following to install the remaining pipeline libraries while preserving your critical workarounds:
+
+```bash
+pip install "setuptools<82.0.0" "transformers==4.46.3"
+pip install phonemizer speechbrain faster-whisper librosa torchaudio numpy scipy
+
+```
+
+---
+
+### **2. Offline Models & Datasets to Download**
+
+To prevent the code from attempting to ping Hugging Face or external servers during execution, download the following artifacts to a dedicated local directory (e.g., `~/cardio_care_ai_assets/`).
+
+| Asset Type | Model / Dataset Name | Purpose in Pipeline | Size (Approx.) |
+| --- | --- | --- | --- |
+| **Stage 2 Model** | `speechbrain/spkrec-ecapa-voxceleb` | Extracts 192-d speaker embeddings from reference audio. | ~80 MB |
+| **Stage 5 / Eval** | `Systran/faster-whisper-large-v3` | Objective ASR Word Error Rate (WER) verification. | ~3.1 GB |
+| **Evaluation Data** | `AI4Bharat MUCS` or `FLEURS (hi_in / en_us)` | Ground-truth Hinglish conversational evaluation text. | ~1.5 GB |
+| **Reference Voice** | `doctor_voice.wav` | Your 3–5 second clinician audio prompt. | < 1 MB |
+
+#### **How to Download Them Offline via Terminal:**
+
+You can use the Hugging Face CLI to pull the exact model weights into local folders:
+
+```bash
+pip install huggingface_hub
+
+# Create local directories
+mkdir -p ~/cardio_care_ai_assets/ecapa_tdnn
+mkdir -p ~/cardio_care_ai_assets/whisper_large_v3
+mkdir -p ~/cardio_care_ai_assets/datasets
+
+# Download SpeechBrain ECAPA-TDNN offline
+huggingface-cli download speechbrain/spkrec-ecapa-voxceleb --local-dir ~/cardio_care_ai_assets/ecapa_tdnn
+
+# Download Faster-Whisper Large-v3 offline
+huggingface-cli download Systran/faster-whisper-large-v3 --local-dir ~/cardio_care_ai_assets/whisper_large_v3
+
+```
+
+---
+
+### **3. How to Direct Paths in Your Code (Offline Mode)**
+
+You do **not** need to rewrite the core logic. You only need to pass your new **local folder paths** into the initialization parameters of the classes I provided earlier.
+
+#### **A. Modifying Stage 2 (`SpeakerConditioningEncoder`)**
+
+When initializing the encoder, point the `model_source` and `savedir` to your local SpeechBrain directory:
+
+```python
+# INSTEAD OF:
+# encoder = SpeakerConditioningEncoder(model_source="speechbrain/spkrec-ecapa-voxceleb")
+
+# DIRECT TO LOCAL OFFLINE PATH:
+LOCAL_ECAPA_PATH = "/home/username/cardio_care_ai_assets/ecapa_tdnn"
+
+encoder = SpeakerConditioningEncoder(model_source=LOCAL_ECAPA_PATH)
+
+```
+
+*(Note: SpeechBrain's `from_hparams` will automatically load from a local directory if you pass the folder path into `source`).*
+
+#### **B. Modifying Module 5 (`EvaluationSuite` - Faster-Whisper)**
+
+Direct Faster-Whisper to load from your local directory instead of pulling from the Hub:
+
+```python
+# IN GENERAL EVALUATION SUITE INITIALIZATION:
+LOCAL_WHISPER_PATH = "/home/username/cardio_care_ai_assets/whisper_large_v3"
+
+# Inside EvaluationSuite __init__:
+self.asr_model = WhisperModel(
+    model_size_or_path=LOCAL_WHISPER_PATH,  # Pass local folder path here!
+    device=device, 
+    compute_type="float16" if device == "cuda" else "int8",
+    local_files_only=True                   # Forces offline mode
+)
+
+```
+
+#### **C. Feeding the Offline Dataset**
+
+Instead of using hardcoded dummy strings in the script, load your locally saved MUCS text file or FLEURS `.tsv` file using standard Python file I/O before passing it into `run_ablation_matrix`:
+
+```python
+# Load your offline text dataset
+with open("/home/username/cardio_care_ai_assets/datasets/mucs_test_sample.txt", "r", encoding="utf-8") as f:
+    offline_mucs_sentences = [line.strip() for line in f if line.strip()]
+
+# Pass to the runner
+run_ablation_matrix(
+    test_sentences=offline_mucs_sentences, 
+    ref_audio_path="/home/username/cardio_care_ai_assets/doctor_voice.wav"
+)
+
+```
+
+---
+
+### **4. File Structure & Execution Strategy**
+
+#### **Should you put everything in one file?**
+
+**No.** While putting everything in a single file is possible, doing so for a 5-stage research pipeline makes debugging memory leaks and CUDA autotune errors on a Blackwell GPU much harder.
+
+I strongly recommend a **modular architecture** where each stage has its own file, unified by an execution script.
+
+#### **Recommended Project Layout & Naming Convention:**
+
+Create a project root folder named `cardio_care_cs_tts/` and organize the files exactly like this:
+
+```text
+cardio_care_cs_tts/
+│
+├── assets/                          # Place your doctor_voice.wav here
+├── src/
+│   ├── __init__.py                  # Empty file to make 'src' a Python package
+│   ├── stage1_phonetics.py          # Contains: PhoneticUnificationEngine
+│   ├── stage2_speaker.py            # Contains: SpeakerConditioningEncoder
+│   ├── stage3_4_engine.py           # Contains: CrossAttentionExtractorLayer & PhonemeAlignedEntropyLoss
+│   ├── stage5_vocoder.py            # Contains: EnergyGatedAcousticGuardrail & VocoderWithGuardrail
+│   └── evaluation.py                # Contains: EvaluationSuite (MCD, SIM-R, WER, Entropy Delta)
+│
+└── run_ablation.py                  # The execution entry point (contains run_ablation_matrix)
+
+```
+
+#### **How to Link Them and Run the System:**
+
+1. In `run_ablation.py`, simply import the classes from your `src/` modules at the top of the file:
+```python
+from src.stage1_phonetics import PhoneticUnificationEngine
+from src.stage2_speaker import SpeakerConditioningEncoder
+from src.stage3_4_engine import PhonemeAlignedEntropyLoss, compute_total_loss
+from src.stage5_vocoder import EnergyGatedAcousticGuardrail
+from src.evaluation import EvaluationSuite
+
+```
+
+
+2. Ensure your PyTorch 2.6 security override (for unpickling `weights_only=False`) is placed at the very top of `run_ablation.py` as established in your project state.
+3. To execute the full 4-Arm Ablation Study, open your terminal, activate your conda environment, and run the entry script:
+```bash
+conda activate cardio_care_ai
+cd ~/cardio_care_cs_tts/
+python run_ablation.py
+
+```
+
+
+
+This clean separation ensures that if your Blackwell GPU hits a kernel compilation issue during `torch.compile` in Stage 4, you can isolate and test `stage3_4_engine.py` independently without re-initializing the Whisper evaluation models or loading the speaker encoder every single time!

@@ -1,1 +1,33 @@
 # TCS-Paper1
+
+log terminals -1
+================================================================================
+STARTING REAL ABLATION STUDY: Zero-Shot Code-Switched Speech Synthesis
+================================================================================
+[+] Loading Real XTTS-v2 Model (CPU-First Initialization)...
+GPT2InferenceModel has generative capabilities, as `prepare_inputs_for_generation` is explicitly overwritten. However, it doesn't directly inherit from `GenerationMixin`. From 👉v4.50👈 onwards, `PreTrainedModel` will NOT inherit from `GenerationMixin`, and this model will lose the ability to call `generate` and other related functions.
+  - If you're using `trust_remote_code=True`, you can get rid of this warning by loading the model with an auto class. See https://huggingface.co/docs/transformers/en/model_doc/auto#auto-classes
+  - If you are the owner of the model architecture code, please modify your model class such that it inherits from `GenerationMixin` (after `PreTrainedModel`, otherwise you'll get an exception).
+  - If you are not the owner of the model architecture class, please contact the model code owner to update it.
+[+] Pushing TTS Engine to RTX PRO 5000 GPU...
+
+[Evaluating Arm 1 (Full System)] generating real audio...
+The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+You have passed task=transcribe, but also have set `forced_decoder_ids` to [[1, None], [2, 50360]] which creates a conflict. `forced_decoder_ids` will be ignored in favor of task=transcribe.
+WARNING:phonemizer:words count mismatch on 100.0% of the lines (1/1)
+WARNING:phonemizer:words count mismatch on 100.0% of the lines (1/1)
+
+[Evaluating Arm 2 (Minus Guardrail)] generating real audio...
+You seem to be using the pipelines sequentially on GPU. In order to maximize efficiency please use a dataset
+WARNING:phonemizer:words count mismatch on 100.0% of the lines (1/1)
+WARNING:phonemizer:words count mismatch on 100.0% of the lines (1/1)
+
+[Evaluating Arm 4 (Minus IPA Unification)] generating real audio...
+
+=====================================================================================
+Ablation Arm                   | MCD (dB)   | SIM-R    | WER (%)  | Δ Entropy  | RTF   
+=====================================================================================
+Arm 1 (Full System)            | 1332.04    | 0.64     | 64.27    | 0.01       | 0.067 
+Arm 2 (Minus Guardrail)        | 1433.07    | 0.65     | 51.70    | 0.00       | 0.068 
+Arm 4 (Minus IPA Unification)  | 1305.20    | 0.65     | 66.87    | 0.01       | 0.067 
+=====================================================================================

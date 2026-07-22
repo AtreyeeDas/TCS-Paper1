@@ -247,3 +247,32 @@ Arm 4 (Minus IPA Unification)  | 700.27     | 0.64     | 48.00    | 0.01       |
 
 ==========================================================================================
 [✓] Physical audio files saved to: /home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/ablation_outputs
+
+
+[+] Initializing Training on cuda (Blackwell / RTX PRO 5000 Optimized)
+[!] SpeechBrain fallback initialized due to: module 'torchaudio' has no attribute 'list_audio_backends'
+[!] SpeechBrain fallback initialized due to: module 'torchaudio' has no attribute 'list_audio_backends'
+[+] Starting Fine-Tuning & Validation Loop...
+/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/librosa/core/intervals.py:8: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import resource_filename
+Traceback (most recent call last):
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/train.py", line 112, in <module>
+    train_entropy_regularized_model()
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/train.py", line 47, in train_entropy_regularized_model
+    for batch in train_loader:
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 725, in __next__
+    data = self._next_data()
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 785, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 57, in fetch
+    return self.collate_fn(data)
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/_utils/collate.py", line 401, in default_collate
+    return collate(batch, collate_fn_map=default_collate_fn_map)
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/_utils/collate.py", line 171, in collate
+    {
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/_utils/collate.py", line 172, in <dictcomp>
+    key: collate(
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/_utils/collate.py", line 155, in collate
+    return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/_utils/collate.py", line 275, in collate_tensor_fn
+    return torch.stack(batch, 0, out=out)

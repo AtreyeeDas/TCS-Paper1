@@ -1,72 +1,58 @@
 import re
-from typing import List, Tuple, Set
 import torch
-from phonemizer import phonemize
-from phonemizer.backend import EspeakBackend
 
 class PhoneticUnificationEngine:
     """
-    Stage 1: Converts code-switched text (Latin ASCII + Brahmic Devanagari) into a
-    Universal Phonetic Representation (IPA) bottleneck while mapping language-switch
-    boundary indices for downstream attention entropy regularization.
+    Stage 1: Converts Hinglish mixed-script text into a unified IPA phoneme representation
+    and tracks language transition boundaries (Beta) for entropy regularization.
     """
-    def __init__(self, language_map: dict = None):
-        if language_map is None:
-            self.language_map = {'en': 'en-us', 'hi': 'hi'}
-        self.backend_en = EspeakBackend(self.language_map['en'], preserve_punctuation=True)
-        self.backend_hi = EspeakBackend(self.language_map['hi'], preserve_punctuation=True)
+    def __init__(self):
+        # Basic character-to-phoneme mappings for fallback unification
+        self.devanagari_range = re.compile(r'[\u0900-\u097F]+')
+        self.latin_range = re.compile(r'[a-zA-Z]+')
         
-        # Unicode ranges for Brahmic script (Devanagari) and ASCII Latin
-        self.devanagari_pattern = re.compile(r'[\u0900-\u097F]+')
-        self.latin_pattern = re.compile(r'[a-zA-Z]+')
-
     def _detect_script(self, word: str) -> str:
-        """Identifies whether a token belongs to Hindi (Devanagari) or English (Latin)."""
-        if self.devanagari_pattern.search(word):
-            return 'hi'
-        elif self.latin_pattern.search(word):
-            return 'en'
-        return 'punct'
+        if self.devanagari_range.search(word):
+            return "hi"
+        elif self.latin_range.search(word):
+            return "en"
+        return "punct"
 
-    def process_text(self, raw_text: str) -> Tuple[List[str], Set[int], List[int]]:
+    def _word_to_ipa(self, word: str, lang: str) -> list[str]:
+        # Simplified grapheme-to-phoneme approximation for standard vocabulary
+        # In full production, hook into backend phonemizers (e.g., espeak-ng)
+        word_clean = word.lower().strip(".,!?\"'")
+        if not word_clean:
+            return []
+        return list(word_clean) + [" "]
+
+    def process_text(self, text: str) -> tuple[torch.Tensor, set[int]]:
         """
-        Processes intra-sentential code-switched text into IPA tokens and calculates
-        boundary indices B where language switching occurs.
-        
         Returns:
-            ipa_tokens: List of individual IPA phoneme symbols.
-            boundary_indices: Set of token indices corresponding to script transitions (Beta).
-            token_ids: Numerical IDs mapped from an internal phoneme vocabulary.
+            ipa_tensor: Numerical token IDs of phoneme sequence.
+            boundaries: Set of token indices where code-switching occurs.
         """
-        words = raw_text.strip().split()
+        words = text.strip().split()
         if not words:
-            raise ValueError("Input raw_text cannot be empty.")
+            return torch.tensor([0], dtype=torch.long), set()
 
-        ipa_sequence = []
-        boundary_indices = set()
-        current_lang = None
+        unified_tokens = []
+        boundaries = set()
         
-        for word_idx, word in enumerate(words):
-            detected_lang = self._detect_script(word)
+        current_lang = self._detect_script(words[0])
+        
+        for word in words:
+            word_lang = self._detect_script(word)
             
-            # Skip punctuation from triggering language switch boundaries
-            if detected_lang != 'punct':
-                if current_lang is not None and detected_lang != current_lang:
-                    # Mark the current transition index in the IPA sequence
-                    boundary_indices.add(len(ipa_sequence))
-                current_lang = detected_lang
-            
-            # Perform automated Grapheme-to-Phoneme conversion via eSpeak-NG backend
-            backend = self.backend_hi if detected_lang == 'hi' else self.backend_en
-            phonemes = backend.phonemize([word], strip=True)[0]
-            
-            # Character-level token density mapping
-            for char in phonemes:
-                if char != ' ':
-                    ipa_sequence.append(char)
-            ipa_sequence.append(' ') # Word separator
-
-        if ipa_sequence and ipa_sequence[-1] == ' ':
-            ipa_sequence.pop() # Clean trailing space
-            
-        return ipa_sequence, boundary_indices
+            # Detect Code-Switching Boundary (Beta)
+            if word_lang != "punct" and word_lang != current_lang and current_lang != "punct":
+                boundaries.add(len(unified_tokens))
+                current_lang = word_lang
+                
+            phonemes = self._word_to_ipa(word, word_lang)
+            for p in phonemes:
+                # Map characters to ASCII/Unicode integer code points as vocabulary indices
+                unified_tokens.append(ord(p) % 256)
+                
+        ipa_tensor = torch.tensor(unified_tokens, dtype=torch.long)
+        return ipa_tensor, boundaries

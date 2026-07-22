@@ -68,7 +68,7 @@ class EvaluationSuite:
                 errors += 1
         return (errors / max(len(gt_words), 1)) * 100.0
 
-    def compute_attention_entropy_variance(self, attn_matrix: torch.Tensor, boundaries: set[int]) -> float:
+        def compute_attention_entropy_variance(self, attn_matrix: torch.Tensor, boundaries: set[int]) -> float:
         """
         Computes Delta H(A_beta): Entropy difference between boundary frames and non-boundary frames.
         """
@@ -76,7 +76,10 @@ class EvaluationSuite:
             return 0.0
             
         probs = torch.clamp(attn_matrix, min=1e-9, max=1.0)
-        entropy = -torch.sum(probs * torch.log(probs), dim=-1).squeeze(0) # [T]
+        
+        # --- FIX: Change dim=-1 to dim=1 to preserve the T_phonemes dimension ---
+        entropy = -torch.sum(probs * torch.log(probs), dim=1).squeeze(0) # Shape: [T_phonemes]
+        # ------------------------------------------------------------------------
         
         bound_idx = [i for i in boundaries if i < len(entropy)]
         non_bound_idx = [i for i in range(len(entropy)) if i not in boundaries]

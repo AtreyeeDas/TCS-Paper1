@@ -1,43 +1,44 @@
 import numpy as np
-import torch
-import torch.nn as nn
+import librosa
 
 class EnergyGatedAcousticGuardrail:
     """
-    Stage 5: Deterministic signal processing filter computing Short-Time Energy (STE).
-    Updated with clinical thresholds to preserve intelligibility (WER).
+    Stage 5: Post-vocoder acoustic guardrail that prevents artifact explosions
+    and energy discontinuities at intra-sentential language switching boundaries.
     """
-    # Increased window to 50ms and dropped threshold to 1e-6 (near silence)
-    def __init__(self, sample_rate: int = 24000, window_ms: int = 50, energy_threshold: float = 1e-6):
-        self.sr = sample_rate
-        self.window_size = int((sample_rate * window_ms) / 1000)
-        self.threshold = energy_threshold
+    def __init__(self, sr: int = 24000, frame_length: int = 1024, hop_length: int = 256):
+        self.sr = sr
+        self.frame_length = frame_length
+        self.hop_length = hop_length
+        self.max_db_threshold = 3.0 # Maximum allowable dB jump between adjacent frames
 
-    def apply_guardrail(self, waveform: np.ndarray, text_completion_idx: int = None) -> np.ndarray:
-        if len(waveform) < self.window_size:
+    def apply_guardrail(self, waveform: np.ndarray) -> np.ndarray:
+        """
+        Applies RMS energy gating and envelope smoothing across the audio waveform.
+        """
+        if len(waveform) == 0:
             return waveform
 
-        # Scan from 85% of audio to ensure we don't clip the main speech body
-        start_scan = text_completion_idx if text_completion_idx is not None else int(len(waveform) * 0.85)
+        # 1. Compute RMS energy envelope
+        rms = librosa.feature.rms(y=waveform, frame_length=self.frame_length, hop_length=self.hop_length)[0]
+        db_envelope = librosa.amplitude_to_db(rms, ref=np.max)
         
-        num_windows = (len(waveform) - start_scan) // self.window_size
-        if num_windows <= 0:
+        # 2. Identify sudden energy discontinuities (Spikes > threshold)
+        db_diff = np.diff(db_envelope, prepend=db_envelope[0])
+        spike_indices = np.where(db_diff > self.max_db_threshold)[0]
+        
+        if len(spike_indices) == 0:
             return waveform
-
-        # Normalize waveform internally before calculating energy to ensure scale-invariance
-        norm_wave = waveform.astype(np.float32)
-        if np.max(np.abs(norm_wave)) > 0:
-            norm_wave = norm_wave / np.max(np.abs(norm_wave))
-
-        for i in range(num_windows):
-            idx_start = start_scan + (i * self.window_size)
-            idx_end = idx_start + self.window_size
-            window = norm_wave[idx_start:idx_end]
             
-            # Compute STE on normalized array
-            ste = np.mean(window ** 2)
+        # 3. Apply Localized Gain Attenuation at artifact locations
+        modified_waveform = waveform.copy()
+        for idx in spike_indices:
+            sample_start = max(0, int(idx * self.hop_length - self.frame_length // 2))
+            sample_end = min(len(waveform), int(idx * self.hop_length + self.frame_length // 2))
             
-            if ste < self.threshold:
-                return waveform[:idx_start]
-                
-        return waveform
+            # Smooth transition using a Hanning fade window
+            window = np.hanning(sample_end - sample_start)
+            attenuation_factor = 10 ** (-self.max_db_threshold / 20.0)
+            modified_waveform[sample_start:sample_end] *= (1.0 - (1.0 - attenuation_factor) * window)
+            
+        return np.clip(modified_waveform, -1.0, 1.0)

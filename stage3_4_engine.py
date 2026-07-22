@@ -28,8 +28,14 @@ class CrossAttentionExtractorLayer(nn.Module):
         # Inject continuous speaker conditioning bias into text memory space
         memory_conditioned = memory + speaker_bias.unsqueeze(1)
         
-        # 1. Autoregressive Self-Attention
-        attn_out, _ = self.self_attn(x, x, x, is_causal=True)
+        # --- FIX: GENERATE EXPLICIT CAUSAL MASK FOR PYTORCH 2.0+ / SDPA ---
+        seq_len = x.size(1)
+        causal_mask = nn.Transformer.generate_square_subsequent_mask(seq_len, device=x.device)
+        
+        # 1. Autoregressive Self-Attention (Pass both attn_mask and is_causal)
+        attn_out, _ = self.self_attn(x, x, x, attn_mask=causal_mask, is_causal=True)
+        # ------------------------------------------------------------------
+        
         x = self.norm1(x + self.dropout(attn_out))
         
         # 2. Phoneme-Aligned Cross-Attention (Intercept Attention Matrix A)
@@ -92,7 +98,7 @@ class PhonemeAlignedEntropyLoss(nn.Module):
         
         return l_entropy
 
-# Optimize execution on modern architectures using Torch Autotune as specified in execution plan
+# Optimize execution on modern architectures using Torch Autotune
 @torch.compile(mode="max-autotune")
 def compute_total_loss(l_tts: torch.Tensor, l_entropy: torch.Tensor, lamda: float = 0.5) -> torch.Tensor:
     """Computes total training objective: L_total = L_tts + lamda * L_entropy"""

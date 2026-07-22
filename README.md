@@ -83,6 +83,48 @@ Arm 4 (Minus IPA Unification)  | 520.79     | 0.64     | 50.74    | 0.01       |
 [✓] Physical audio files saved to: /home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/ablation_outputs
 
 terminal logs 5-
+(icassp_cstts) spark2@01HW2722098:~/users/intern/Atreyee-Das/ICASSP_Work/implementation$ python mucs_slicer.py
+[+] Found 3136 utterances to slice. Loading audio files...
+Processing Recordings:   0%|                                                                                                                                            | 0/30 [00:00<?, ?it/s]/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/librosa/core/intervals.py:8: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import resource_filename
+/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/mucs_slicer.py:55: UserWarning: PySoundFile failed. Trying audioread instead.
+  y, sr = librosa.load(audio_path, sr=24000)
+/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/librosa/core/audio.py:184: FutureWarning: librosa.core.audio.__audioread_load
+        Deprecated as of librosa version 0.10.0.
+        It will be removed in librosa version 1.0.
+  y, sr_native = __audioread_load(path, offset, duration, dtype)
+[-] Failed to process recording w5Jyq3XMbb3WwiKQ: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/w5Jyq3XMbb3WwiKQ.wav'
+Processing Recordings:   3%|████▍                                                                                                                               | 1/30 [00:00<00:13,  2.23it/s][-] Failed to process recording UO5ZLDtkc8QMi9Hk: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/UO5ZLDtkc8QMi9Hk.wav'
+[-] Failed to process recording nJfFvNUB8tQkaGgp: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/nJfFvNUB8tQkaGgp.wav'
+[-] Failed to process recording x8iijxWeCf26KNpC: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/x8iijxWeCf26KNpC.wav'
+[-] Failed to process recording swLUjPHatcTk0wf8: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/swLUjPHatcTk0wf8.wav'
+[-] Failed to process recording fpL6MBSZsci9dyAn: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/fpL6MBSZsci9dyAn.wav'
+[-] Failed to process recording TkzR0GrQyK0vSTuj: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/TkzR0GrQyK0vSTuj.wav'
+[-] Failed to process recording ZQC2TFqLsvNDq9bP: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/ZQC2TFqLsvNDq9bP.wav'
+[-] Failed to process recording FV8hkymGWcy53lrf: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/FV8hkymGWcy53lrf.wav'
+[-] Failed to process recording NhV290ew2hDJfVqc: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/NhV290ew2hDJfVqc.wav'
+[-] Failed to process recording HgEJsLGKNWSFl8T7: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/HgEJsLGKNWSFl8T7.wav'
+[-] Failed to process recording K5BlLYB9ynemLTVa: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/K5BlLYB9ynemLTVa.wav'
+[-] Failed to process recording 4oLp3bc9OSJbDrwM: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/4oLp3bc9OSJbDrwM.wav'
+[-] Failed to process recording LPGZ2Jo8uBX4sx76: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/LPGZ2Jo8uBX4sx76.wav'
+[-] Failed to process recording 5baFeyjOxK8JQnNG: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/5baFeyjOxK8JQnNG.wav'
+[-] Failed to process recording n3lwFhZkSdbJkOa0: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/n3lwFhZkSdbJkOa0.wav'
+[-] Failed to process recording aVTioioyNUVPGF4t: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/aVTioioyNUVPGF4t.wav'
+[-] Failed to process recording RRrEfkw4Rh5TdJkS: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/RRrEfkw4Rh5TdJkS.wav'
+[-] Failed to process recording Psh5UDSFbhWLZ3gk: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/Psh5UDSFbhWLZ3gk.wav'
+[-] Failed to process recording 406yMKxIdSDHRf8H: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/406yMKxIdSDHRf8H.wav'
+[-] Failed to process recording nImMxiSAAmCMR3yi: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/nImMxiSAAmCMR3yi.wav'
+[-] Failed to process recording K8YJLqIcMPJ5GftE: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/K8YJLqIcMPJ5GftE.wav'
+[-] Failed to process recording VU6OA7HUqTpQNtm2: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/VU6OA7HUqTpQNtm2.wav'
+[-] Failed to process recording dNHXkqqVPqWYhzis: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/dNHXkqqVPqWYhzis.wav'
+[-] Failed to process recording kGQKLyQ1HtnUNL1d: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/kGQKLyQ1HtnUNL1d.wav'
+[-] Failed to process recording lHGLSlYIb1clRBRF: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/lHGLSlYIb1clRBRF.wav'
+[-] Failed to process recording Bmcrju1ByfdrXE9P: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/Bmcrju1ByfdrXE9P.wav'
+[-] Failed to process recording jFTbEEy3BCO5axj5: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/jFTbEEy3BCO5axj5.wav'
+[-] Failed to process recording kvxzesc5pGxL6dnk: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/kvxzesc5pGxL6dnk.wav'
+[-] Failed to process recording 4xyIm2P6Xzlin341: [Errno 2] No such file or directory: '/home/spark2/Models/MUCS_Hindi-English_test_dataset/test/transcripts/4xyIm2P6Xzlin341.wav'
+Processing Recordings: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 30/30 [00:00<00:00, 66.60it/s]
+[✓] Slicing complete! All files saved to ./MUCS_sliced/audio
 =====================================================================================
 STARTING REAL ABLATION STUDY: Zero-Shot Code-Switched Speech Synthesis
 =====================================================================================

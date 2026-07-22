@@ -68,7 +68,7 @@ class EvaluationSuite:
                 errors += 1
         return (errors / max(len(gt_words), 1)) * 100.0
 
-        def compute_attention_entropy_variance(self, attn_matrix: torch.Tensor, boundaries: set[int]) -> float:
+            def compute_attention_entropy_variance(self, attn_matrix: torch.Tensor, boundaries: set[int]) -> float:
         """
         Computes Delta H(A_beta): Entropy difference between boundary frames and non-boundary frames.
         """
@@ -91,7 +91,8 @@ class EvaluationSuite:
         h_stable = entropy[non_bound_idx].mean().item()
         
         return float(h_boundary - h_stable)
-    def compute_mcd(self, ref_audio: np.ndarray, gen_audio: np.ndarray, sr: int = 24000, n_mfcc: int = 24) -> float:
+
+ def compute_mcd(self, ref_audio: np.ndarray, gen_audio: np.ndarray, sr: int = 24000, n_mfcc: int = 24) -> float:
         """
         Calculates Mel-Cepstral Distortion (MCD) utilizing DTW 
         and strict amplitude normalization to prevent logarithmic explosion.

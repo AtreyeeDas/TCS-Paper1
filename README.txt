@@ -276,3 +276,36 @@ Traceback (most recent call last):
     return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
   File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/_utils/collate.py", line 275, in collate_tensor_fn
     return torch.stack(batch, 0, out=out)
+
+[+] Initializing Training on cuda (Blackwell / RTX PRO 5000 Optimized)
+/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/speechbrain/utils/autocast.py:68: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  wrapped_fwd = torch.cuda.amp.custom_fwd(fwd, cast_inputs=cast_inputs)
+[+] Starting Fine-Tuning & Validation Loop...
+/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/librosa/core/intervals.py:8: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import resource_filename
+Traceback (most recent call last):
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/train.py", line 173, in <module>
+    train_entropy_regularized_model()
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/train.py", line 112, in train_entropy_regularized_model
+    predicted_audio, cross_attn_matrix = model(ipa_tokens, speaker_emb)
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1780, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1791, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/src/model_architecture.py", line 48, in forward
+    decoder_out, cross_attn_matrix = self.cross_attention_layer(
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1780, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1791, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/src/stage3_4_engine.py", line 32, in forward
+    attn_out, _ = self.self_attn(x, x, x, is_causal=True)
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1780, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1791, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/activation.py", line 1495, in forward
+    attn_output, attn_output_weights = F.multi_head_attention_forward(
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/functional.py", line 6837, in multi_head_attention_forward
+    raise RuntimeError(
+RuntimeError: Need attn_mask if specifying the is_causal hint. You may use the Transformer module method `generate_square_subsequent_mask` to create this mask.

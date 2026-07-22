@@ -73,27 +73,27 @@ class PhonemeAlignedEntropyLoss(nn.Module):
             l_entropy: Scalar tensor representing the boundary Shannon entropy penalty.
         """
         if not boundary_indices or len(boundary_indices) == 0:
-            # Return zero gradient-enabling loss if no intra-sentential boundary exists
             return torch.tensor(0.0, device=attn_matrix.device, requires_grad=True)
 
         # Ensure valid probability distribution over phoneme sequence T
         attn_matrix = torch.clamp(attn_matrix, min=self.eps, max=1.0)
         
-        # Calculate Shannon Entropy per frame m: H(A_m) = - Sum_t (A_{m,t} * log(A_{m,t}))
-        entropy_per_frame = -torch.sum(attn_matrix * torch.log(attn_matrix), dim=-1) # Shape: [Batch, M]
+        # --- FIX: Sum across acoustic frame dimension (dim=1 or dim=-2) ---
+        # Computes Shannon Entropy per phoneme token t: H(A_t) = - Sum_m (A_{m,t} * log(A_{m,t}))
+        # Shape transitions from [Batch, M_frames, T_phonemes] -> [Batch, T_phonemes]
+        entropy_per_token = -torch.sum(attn_matrix * torch.log(attn_matrix), dim=1)
+        # ------------------------------------------------------------------
         
-        # Filter strictly for target boundary frames in Beta
         boundary_list = list(boundary_indices)
         
-        # Guard against index out-of-bounds if phoneme sequence length T was truncated
+        # Guard against index out-of-bounds against T_phonemes
         valid_boundaries = [idx for idx in boundary_list if idx < attn_matrix.shape[-1]]
         
         if not valid_boundaries:
             return torch.tensor(0.0, device=attn_matrix.device, requires_grad=True)
             
-        # Select boundary transition frames across all batches
-        # We average entropy over frames corresponding to transition indices
-        boundary_entropy = entropy_per_frame[:, valid_boundaries]
+        # Safely index boundary transition columns from dimension T_phonemes
+        boundary_entropy = entropy_per_token[:, valid_boundaries]
         l_entropy = torch.mean(boundary_entropy)
         
         return l_entropy

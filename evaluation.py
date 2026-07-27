@@ -12,7 +12,8 @@ class EvaluationSuite:
     def __init__(self, device: str = "cuda" if torch.cuda.is_available() else "cpu"):
         self.device = device
         self._init_asr_model()
-       def _init_asr_model(self):
+       
+    def _init_asr_model(self):
         # --- UPDATE THIS PATH TO YOUR ACTUAL OFFLINE MODEL FOLDER ---
         offline_whisper_path = "/home/spark2/Models/whisper-large-v3-turbo" 
         # ------------------------------------------------------------

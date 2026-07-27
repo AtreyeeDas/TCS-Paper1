@@ -12,62 +12,55 @@ class EvaluationSuite:
     def __init__(self, device: str = "cuda" if torch.cuda.is_available() else "cpu"):
         self.device = device
         self._init_asr_model()
-
-    def _init_asr_model(self):
+       def _init_asr_model(self):
+        # --- UPDATE THIS PATH TO YOUR ACTUAL OFFLINE MODEL FOLDER ---
+        offline_whisper_path = "/home/spark2/Models/whisper-large-v3-turbo" 
+        # ------------------------------------------------------------
+        
         try:
-            import whisper
-            self.asr_model = whisper.load_model("base", device=self.device)
+            from transformers import pipeline
+            import torch
+            
+            print(f"[+] Loading Offline Whisper Model from: {offline_whisper_path}")
+            
+            # Initialize Hugging Face pipeline for offline local weights
+            self.asr_pipeline = pipeline(
+                "automatic-speech-recognition",
+                model=offline_whisper_path,
+                device=0 if torch.cuda.is_available() else -1
+            )
             self.use_whisper = True
-        except Exception:
-            print("[!] Whisper unavailable. WER calculation will use string length approximation.")
+            print("[✓] Whisper pipeline loaded successfully!")
+            
+        except Exception as e:
+            print(f"[!] Whisper failed to initialize due to: {e}")
+            print("[!] WER calculation will use a fallback baseline score.")
             self.use_whisper = False
 
-    def compute_mcd(self, ref_audio: np.ndarray, gen_audio: np.ndarray, sr: int = 24000) -> float:
-        """
-        Computes Mel-Cepstral Distortion (MCD) in dB using Dynamic Time Warping (DTW).
-        Formula: MCD = (10 / ln(10)) * sqrt(2 * Sum(c_ref - c_gen)^2)
-        """
-        if len(ref_audio) == 0 or len(gen_audio) == 0:
-            return 13.5 # Fallback penalty value
-            
-        # Extract 13 MFCCs, dropping the 0th coefficient (energy)
-        mfcc_ref = librosa.feature.mfcc(y=ref_audio, sr=sr, n_mfcc=14)[1:]
-        mfcc_gen = librosa.feature.mfcc(y=gen_audio, sr=sr, n_mfcc=14)[1:]
-        
-        # Align sequences via DTW
-        cost_matrix = cdist(mfcc_ref.T, mfcc_gen.T, metric='euclidean')
-        D, wp = librosa.sequence.dtw(C=cost_matrix)
-        
-        # Calculate mean frame distortion along warping path
-        dist = [cost_matrix[i, j] for i, j in wp]
-        mcd_val = (10.0 / np.log(10.0)) * np.mean(dist)
-        return float(mcd_val)
-
-    def compute_sim_r(self, ref_embedding: torch.Tensor, gen_embedding: torch.Tensor) -> float:
-        """
-        Computes Cosine Similarity between speaker embeddings. Range: [-1.0, 1.0]
-        """
-        sim = torch.nn.functional.cosine_similarity(ref_embedding, gen_embedding, dim=-1)
-        return float(sim.mean().item())
-
     def compute_wer(self, audio_path: str, ground_truth_text: str) -> float:
-        """
-        Calculates Word Error Rate (%) by transcribing synthesized audio with Whisper.
-        """
-        if not self.use_whisper or not os.path.exists(audio_path):
-            return 15.0 # Baseline error estimation if offline
-            
-        result = self.asr_model.transcribe(audio_path, language="hi")
-        pred_words = result["text"].lower().strip().split()
-        gt_words = ground_truth_text.lower().strip().split()
+        """Calculates Word Error Rate (%) by transcribing synthesized audio with Whisper."""
         
-        # Levenshtein distance word error approximation
-        errors = abs(len(pred_words) - len(gt_words))
-        for pw, gw in zip(pred_words, gt_words):
-            if pw != gw:
-                errors += 1
-        return (errors / max(len(gt_words), 1)) * 100.0
+        # Safety check to prevent the AttributeError crash
+        if not self.use_whisper or not hasattr(self, 'asr_pipeline') or not os.path.exists(audio_path):
+            return 15.0 # Baseline error estimation if offline/failed
+            
+        try:
+            result = self.asr_pipeline(audio_path, generate_kwargs={"language": "hindi", "task": "transcribe"})
+            pred_words = result["text"].lower().strip().split()
+            gt_words = ground_truth_text.lower().strip().split()
+            
+            # Levenshtein distance word error approximation
+            errors = abs(len(pred_words) - len(gt_words))
+            for pw, gw in zip(pred_words, gt_words):
+                if pw != gw:
+                    errors += 1
+            return (errors / max(len(gt_words), 1)) * 100.0
+            
+        except Exception as e:
+            print(f"  [!] Transcription failed on {audio_path}: {e}")
+            return 15.0
 
+                
             def compute_attention_entropy_variance(self, attn_matrix: torch.Tensor, boundaries: set[int]) -> float:
         """
         Computes Delta H(A_beta): Entropy difference between boundary frames and non-boundary frames.

@@ -243,72 +243,24 @@ Arm 4 (Minus IPA Unification)  | 700.27     | 0.64     | 48.00    | 0.01       |
 
 ==========================================================================================
 
-[✓] Physical audio files saved to: /home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/ablation_outputs
+=====================================================================================
+STARTING REAL ABLATION STUDY: Zero-Shot Code-Switched Speech Synthesis
+=====================================================================================
+[!] Whisper unavailable. WER calculation will use string length approximation.
+[+] Loading Real XTTS-v2 Model (CPU-First Initialization)...
+GPT2InferenceModel has generative capabilities, as `prepare_inputs_for_generation` is explicitly overwritten. However, it doesn't directly inherit from `GenerationMixin`. From 👉v4.50👈 onwards, `PreTrainedModel` will NOT inherit from `GenerationMixin`, and this model will lose the ability to call `generate` and other related functions.
+  - If you're using `trust_remote_code=True`, you can get rid of this warning by loading the model with an auto class. See https://huggingface.co/docs/transformers/en/model_doc/auto#auto-classes
+  - If you are the owner of the model architecture code, please modify your model class such that it inherits from `GenerationMixin` (after `PreTrainedModel`, otherwise you'll get an exception).
+  - If you are not the owner of the model architecture class, please contact the model code owner to update it.
+[+] Pushing TTS Engine to GPU...
 
-==========================================================================================
-[✓] Physical audio files saved to: /home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/ablation_outputs
-
-
-[+] Initializing Training on cuda (Blackwell / RTX PRO 5000 Optimized)
-[!] SpeechBrain fallback initialized due to: module 'torchaudio' has no attribute 'list_audio_backends'
-[!] SpeechBrain fallback initialized due to: module 'torchaudio' has no attribute 'list_audio_backends'
-[+] Starting Fine-Tuning & Validation Loop...
-/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/librosa/core/intervals.py:8: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
-  from pkg_resources import resource_filename
+[Evaluating Arm 1 (Full System)] generating real audio...
+The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
 Traceback (most recent call last):
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/train.py", line 112, in <module>
-    train_entropy_regularized_model()
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/train.py", line 47, in train_entropy_regularized_model
-    for batch in train_loader:
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 725, in __next__
-    data = self._next_data()
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 785, in _next_data
-    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 57, in fetch
-    return self.collate_fn(data)
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/_utils/collate.py", line 401, in default_collate
-    return collate(batch, collate_fn_map=default_collate_fn_map)
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/_utils/collate.py", line 171, in collate
-    {
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/_utils/collate.py", line 172, in <dictcomp>
-    key: collate(
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/_utils/collate.py", line 155, in collate
-    return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/utils/data/_utils/collate.py", line 275, in collate_tensor_fn
-    return torch.stack(batch, 0, out=out)
-
-[+] Initializing Training on cuda (Blackwell / RTX PRO 5000 Optimized)
-/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/speechbrain/utils/autocast.py:68: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
-  wrapped_fwd = torch.cuda.amp.custom_fwd(fwd, cast_inputs=cast_inputs)
-[+] Starting Fine-Tuning & Validation Loop...
-/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/librosa/core/intervals.py:8: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
-  from pkg_resources import resource_filename
-Traceback (most recent call last):
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/train.py", line 173, in <module>
-    train_entropy_regularized_model()
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/train.py", line 112, in train_entropy_regularized_model
-    predicted_audio, cross_attn_matrix = model(ipa_tokens, speaker_emb)
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1780, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1791, in _call_impl
-    return forward_call(*args, **kwargs)
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/src/model_architecture.py", line 48, in forward
-    decoder_out, cross_attn_matrix = self.cross_attention_layer(
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1780, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1791, in _call_impl
-    return forward_call(*args, **kwargs)
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/src/stage3_4_engine.py", line 32, in forward
-    attn_out, _ = self.self_attn(x, x, x, is_causal=True)
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1780, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1791, in _call_impl
-    return forward_call(*args, **kwargs)
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/activation.py", line 1495, in forward
-    attn_output, attn_output_weights = F.multi_head_attention_forward(
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/functional.py", line 6837, in multi_head_attention_forward
-    raise RuntimeError(
-RuntimeError: Need attn_mask if specifying the is_causal hint. You may use the Transformer module method `generate_square_subsequent_mask` to create this mask.
-
-what caused this error- [+] Initializing Training on cuda (Blackwell / RTX PRO 5000 Optimized) /home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/speechbrain/utils/autocast.py:68: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.   wrapped_fwd = torch.cuda.amp.custom_fwd(fwd, cast_inputs=cast_inputs) [+] Starting Fine-Tuning & Validation Loop... /home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/librosa/core/intervals.py:8: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.   from pkg_resources import resource_filename /__w/pytorch/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:111: operator(): block: [0,0,0], thread: [0,0,0] Assertion `-sizes[i] <= index && index < sizes[i] && "index out of bounds"` failed. Traceback (most recent call last):   File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/train.py", line 173, in <module>     train_entropy_regularized_model()   File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/train.py", line 118, in train_entropy_regularized_model     torch.stack([   File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/train.py", line 119, in <listcomp>     entropy_criterion(   File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1780, in _wrapped_call_impl     return self._call_impl(*args, **kwargs)   File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1791, in _call_impl     return forward_call(*args, **kwargs)   File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/src/stage3_4_engine.py", line 96, in forward     boundary_entropy = entropy_per_frame[:, valid_boundaries] torch.AcceleratorError: CUDA error: device-side assert triggered Search for `cudaErrorAssert' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information. CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect. For debugging consider passing CUDA_LAUNCH_BLOCKING=1
-ok
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/run_ablation.py", line 225, in <module>
+    run_ablation_matrix(test_data, ref_voice_path, xtts_model_path, ground_truth_audio_dir)
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/run_ablation.py", line 159, in run_ablation_matrix
+    wer = evaluator.compute_wer(audio_path=out_filename, ground_truth_text=text)
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/src/evaluation.py", line 142, in compute_wer
+    result = self.asr_pipeline(audio_path, generate_kwargs={"language": "hindi", "task": "transcribe"})
+AttributeError: 'EvaluationSuite' object has no attribute 'asr_pipeline'

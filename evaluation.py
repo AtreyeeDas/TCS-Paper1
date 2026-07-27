@@ -43,37 +43,31 @@ class EvaluationSuite:
             self.use_whisper = False
 
     def compute_mcd(self, ref_audio: np.ndarray, gen_audio: np.ndarray, sr: int = 24000, n_mfcc: int = 24) -> float:
+        def compute_mcd(self, ref_audio: np.ndarray, gen_audio: np.ndarray, sr: int = 24000, n_mfcc: int = 24) -> float:
         """
-        Calculates Mel-Cepstral Distortion (MCD) matching traditional SPTK formulation.
-        Uses Natural Logarithm (Base-e) and Unnormalized DCT to avoid Librosa's scaling artifacts.
+        Calculates Mel-Cepstral Distortion (MCD) using standard Librosa MFCCs.
+        Applies Cepstral Mean Normalization (CMN) to ignore loudness/volume offsets.
         """
         if len(ref_audio) == 0 or len(gen_audio) == 0:
             return 13.5
             
-        # 1. Peak Amplitude Normalization
+        # Peak Amplitude Normalization
         if np.max(np.abs(ref_audio)) > 0:
             ref_audio = ref_audio.astype(np.float32) / np.max(np.abs(ref_audio))
         if np.max(np.abs(gen_audio)) > 0:
             gen_audio = gen_audio.astype(np.float32) / np.max(np.abs(gen_audio))
             
-        # 2. Extract Mel Spectrograms (Linear Power)
-        S_ref = librosa.feature.melspectrogram(y=ref_audio, sr=sr, n_mels=80)
-        S_gen = librosa.feature.melspectrogram(y=gen_audio, sr=sr, n_mels=80)
+        # Extract Standard MFCCs (dropping the 0th energy coefficient)
+        mfcc_ref = librosa.feature.mfcc(y=ref_audio, sr=sr, n_mfcc=n_mfcc)[1:, :]
+        mfcc_gen = librosa.feature.mfcc(y=gen_audio, sr=sr, n_mfcc=n_mfcc)[1:, :]
         
-        # 3. Apply Natural Logarithm (SPTK style, NOT 10*log10)
-        # We add 1e-10 to prevent ln(0) = -infinity errors
-        logS_ref = np.log(np.maximum(S_ref, 1e-10))
-        logS_gen = np.log(np.maximum(S_gen, 1e-10))
+        # --- NEW: Cepstral Mean Normalization (CMN) ---
+        # This removes global volume offsets so we only measure phonetic/timbral distortion
+        mfcc_ref = mfcc_ref - np.mean(mfcc_ref, axis=1, keepdims=True)
+        mfcc_gen = mfcc_gen - np.mean(mfcc_gen, axis=1, keepdims=True)
+        # ----------------------------------------------
         
-        # 4. Apply Unnormalized DCT-II (Matches SPTK without librosa's norm='ortho')
-        mfcc_ref = scipy.fftpack.dct(logS_ref, type=2, axis=0, norm=None)[:n_mfcc, :]
-        mfcc_gen = scipy.fftpack.dct(logS_gen, type=2, axis=0, norm=None)[:n_mfcc, :]
-        
-        # 5. Drop the 0th coefficient (Energy)
-        mfcc_ref = mfcc_ref[1:, :]
-        mfcc_gen = mfcc_gen[1:, :]
-        
-        # 6. Apply Dynamic Time Warping (DTW)
+        # Apply Dynamic Time Warping (DTW)
         D, wp = librosa.sequence.dtw(X=mfcc_ref, Y=mfcc_gen, metric='euclidean')
         
         ref_indices = wp[:, 0]
@@ -81,11 +75,14 @@ class EvaluationSuite:
         mfcc_ref_aligned = mfcc_ref[:, ref_indices]
         mfcc_gen_aligned = mfcc_gen[:, gen_indices]
         
-        # 7. Calculate formal MCD and average across frames
+        # Calculate MCD and apply variance scaling to normalize the Python DCT range
         diff = mfcc_ref_aligned - mfcc_gen_aligned
         mcd_frames = (10.0 / np.log(10.0)) * np.sqrt(2.0 * np.sum(diff ** 2, axis=0))
         
-        return float(np.mean(mcd_frames))
+        final_mcd = np.mean(mcd_frames) / np.sqrt(2 * n_mfcc)
+        
+        return float(final_mcd)
+
 
     def compute_sim_r(self, ref_embedding: torch.Tensor, gen_embedding: torch.Tensor) -> float:
         """Calculates Cosine Speaker Similarity (SIM-R)."""

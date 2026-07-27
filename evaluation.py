@@ -120,4 +120,12 @@ class EvaluationSuite:
         entropy = -torch.sum(probs * torch.log(probs), dim=1).squeeze(0)
         
         bound_idx = [i for i in boundaries if i < len(entropy)]
-        non_bound_idx = [i for i in range(len
+        non_bound_idx = [i for i in range(len(entropy)) if i not in boundaries]
+        
+        if not bound_idx or not non_bound_idx:
+            return 0.0
+            
+        h_boundary = entropy[bound_idx].mean().item()
+        h_stable = entropy[non_bound_idx].mean().item()
+        
+        return float(abs(h_boundary - h_stable))

@@ -243,10 +243,12 @@ Arm 4 (Minus IPA Unification)  | 700.27     | 0.64     | 48.00    | 0.01       |
 
 ==========================================================================================
 
+python run_ablation.py
 =====================================================================================
 STARTING REAL ABLATION STUDY: Zero-Shot Code-Switched Speech Synthesis
 =====================================================================================
-[!] Whisper unavailable. WER calculation will use string length approximation.
+[+] Loading Offline Whisper Model from: /home/spark2/Models/whisper_large_v3_turbo
+[✓] Whisper pipeline loaded successfully!
 [+] Loading Real XTTS-v2 Model (CPU-First Initialization)...
 GPT2InferenceModel has generative capabilities, as `prepare_inputs_for_generation` is explicitly overwritten. However, it doesn't directly inherit from `GenerationMixin`. From 👉v4.50👈 onwards, `PreTrainedModel` will NOT inherit from `GenerationMixin`, and this model will lose the ability to call `generate` and other related functions.
   - If you're using `trust_remote_code=True`, you can get rid of this warning by loading the model with an auto class. See https://huggingface.co/docs/transformers/en/model_doc/auto#auto-classes
@@ -256,11 +258,12 @@ GPT2InferenceModel has generative capabilities, as `prepare_inputs_for_generatio
 
 [Evaluating Arm 1 (Full System)] generating real audio...
 The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+You have passed task=transcribe, but also have set `forced_decoder_ids` to [[1, None], [2, 50360]] which creates a conflict. `forced_decoder_ids` will be ignored in favor of task=transcribe.
 Traceback (most recent call last):
   File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/run_ablation.py", line 225, in <module>
     run_ablation_matrix(test_data, ref_voice_path, xtts_model_path, ground_truth_audio_dir)
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/run_ablation.py", line 159, in run_ablation_matrix
-    wer = evaluator.compute_wer(audio_path=out_filename, ground_truth_text=text)
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/src/evaluation.py", line 142, in compute_wer
-    result = self.asr_pipeline(audio_path, generate_kwargs={"language": "hindi", "task": "transcribe"})
-AttributeError: 'EvaluationSuite' object has no attribute 'asr_pipeline'
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/run_ablation.py", line 163, in run_ablation_matrix
+    sim_r = evaluator.compute_sim_r(ref_embedding, gen_embedding)
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/src/evaluation.py", line 156, in compute_sim_r
+    return float(sim.item())
+RuntimeError: a Tensor with 192 elements cannot be converted to Scalar

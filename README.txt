@@ -1,4 +1,4 @@
-python run_ablation.py
+(icassp_cstts) spark2@01HW2722098:~/users/intern/Atreyee-Das/ICASSP_Work/implementation$ python run_ablation.py
 =====================================================================================
 STARTING REAL ABLATION STUDY: Zero-Shot Code-Switched Speech Synthesis
 =====================================================================================
@@ -14,6 +14,7 @@ GPT2InferenceModel has generative capabilities, as `prepare_inputs_for_generatio
 [Evaluating Arm 1 (Full System)] generating real audio...
 The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
 You have passed task=transcribe, but also have set `forced_decoder_ids` to [[1, None], [2, 50360]] which creates a conflict. `forced_decoder_ids` will be ignored in favor of task=transcribe.
+Passing a tuple of `past_key_values` is deprecated and will be removed in Transformers v4.43.0. You should pass an instance of `EncoderDecoderCache` instead, e.g. `past_key_values=EncoderDecoderCache.from_legacy_cache(past_key_values)`.
 You seem to be using the pipelines sequentially on GPU. In order to maximize efficiency please use a dataset
 
 [Evaluating Arm 2 (Minus Guardrail)] generating real audio...
@@ -25,31 +26,9 @@ You seem to be using the pipelines sequentially on GPU. In order to maximize eff
 ==========================================================================================
 Ablation Arm                   | MCD (dB)   | SIM-R    | WER (%)  | Δ Entropy  | RTF   
 ==========================================================================================
-Arm 1 (Full System)            | 717.19     | 0.69     | 51.87    | 0.03       | 0.334 
-Arm 2 (Minus Guardrail)        | 719.01     | 0.69     | 52.99    | 0.03       | 0.335 
-Arm 3 (Minus L_entropy)        | 713.66     | 0.68     | 50.51    | 0.45       | 0.341 
-Arm 4 (Minus IPA Unification)  | 716.00     | 0.69     | 52.83    | 0.05       | 0.342 
+Arm 1 (Full System)            | 70.84      | 0.69     | 56.60    | 0.03       | 0.363 
+Arm 2 (Minus Guardrail)        | 72.25      | 0.69     | 52.10    | 0.03       | 0.354 
+Arm 3 (Minus L_entropy)        | 71.23      | 0.68     | 49.80    | 0.45       | 0.355 
+Arm 4 (Minus IPA Unification)  | 71.68      | 0.70     | 49.20    | 0.04       | 0.353 
 ==========================================================================================
 [✓] Physical audio files saved to: /home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/ablation_outputs
-
-=====================================================================================
-CAMERA-READY IEEE ICASSP LATEX TABLE (Copy & Paste directly into your .tex file)
-=====================================================================================
-\begin{table}[t]
-\centering
-\caption{Ablation Study on Zero-Shot Code-Switched Speech Synthesis Performance.}
-\label{tab:ablation_results}
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{l c c c c c}
-\toprule
-\textbf{Architecture Variant} & \textbf{MCD (dB)} $\downarrow$ & \textbf{SIM-R} $\uparrow$ & \textbf{WER (\%)} $\downarrow$ & $\Delta \mathbf{H(\mathcal{A}_\beta)}$ $\downarrow$ & \textbf{RTF} $\downarrow$ \\
-\midrule
-Proposed (Full System) & 717.19 & 0.69 & 51.87 & 0.026 & 0.334 \\
-w/o Acoustic Guardrail & 719.01 & 0.69 & 52.99 & 0.032 & 0.335 \\
-w/o $\mathcal{L}_{\text{entropy}}$ & 713.66 & 0.68 & 50.51 & 0.450 & 0.341 \\
-w/o Phonetic Unification & 716.00 & 0.69 & 52.83 & 0.052 & 0.342 \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-=====================================================================================

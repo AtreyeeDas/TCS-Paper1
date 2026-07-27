@@ -2,6 +2,15 @@ import os
 import torch
 import librosa
 import numpy as np
+import scipy.fftpack
+
+# You must run `pip install indic-transliteration` in your terminal for this to work
+try:
+    from indic_transliteration import sanscript
+    HAS_TRANSLITERATION = True
+except ImportError:
+    print("[!] Warning: 'indic_transliteration' not found. Run 'pip install indic-transliteration' for accurate WER.")
+    HAS_TRANSLITERATION = False
 
 class EvaluationSuite:
     """
@@ -30,28 +39,41 @@ class EvaluationSuite:
             print("[✓] Whisper pipeline loaded successfully!")
             
         except Exception as e:
-            print(f"[!] Whisper failed to initialize due to: {e}")
+            print(f"[!] Whisper failed to initialize due to: {e}\n[!] WER calculation will use a fallback baseline score.")
             self.use_whisper = False
 
     def compute_mcd(self, ref_audio: np.ndarray, gen_audio: np.ndarray, sr: int = 24000, n_mfcc: int = 24) -> float:
         """
-        Calculates Mel-Cepstral Distortion (MCD) utilizing DTW.
-        Corrects for Librosa's Base-10 scaling to prevent logarithmic explosion.
+        Calculates Mel-Cepstral Distortion (MCD) matching traditional SPTK formulation.
+        Uses Natural Logarithm (Base-e) and Unnormalized DCT to avoid Librosa's scaling artifacts.
         """
         if len(ref_audio) == 0 or len(gen_audio) == 0:
             return 13.5
             
-        # Peak Amplitude Normalization
+        # 1. Peak Amplitude Normalization
         if np.max(np.abs(ref_audio)) > 0:
             ref_audio = ref_audio.astype(np.float32) / np.max(np.abs(ref_audio))
         if np.max(np.abs(gen_audio)) > 0:
             gen_audio = gen_audio.astype(np.float32) / np.max(np.abs(gen_audio))
             
-        # Extract MFCCs and drop the 0th coefficient (Energy)
-        mfcc_ref = librosa.feature.mfcc(y=ref_audio, sr=sr, n_mfcc=n_mfcc)[1:, :]
-        mfcc_gen = librosa.feature.mfcc(y=gen_audio, sr=sr, n_mfcc=n_mfcc)[1:, :]
+        # 2. Extract Mel Spectrograms (Linear Power)
+        S_ref = librosa.feature.melspectrogram(y=ref_audio, sr=sr, n_mels=80)
+        S_gen = librosa.feature.melspectrogram(y=gen_audio, sr=sr, n_mels=80)
         
-        # Apply Dynamic Time Warping (DTW)
+        # 3. Apply Natural Logarithm (SPTK style, NOT 10*log10)
+        # We add 1e-10 to prevent ln(0) = -infinity errors
+        logS_ref = np.log(np.maximum(S_ref, 1e-10))
+        logS_gen = np.log(np.maximum(S_gen, 1e-10))
+        
+        # 4. Apply Unnormalized DCT-II (Matches SPTK without librosa's norm='ortho')
+        mfcc_ref = scipy.fftpack.dct(logS_ref, type=2, axis=0, norm=None)[:n_mfcc, :]
+        mfcc_gen = scipy.fftpack.dct(logS_gen, type=2, axis=0, norm=None)[:n_mfcc, :]
+        
+        # 5. Drop the 0th coefficient (Energy)
+        mfcc_ref = mfcc_ref[1:, :]
+        mfcc_gen = mfcc_gen[1:, :]
+        
+        # 6. Apply Dynamic Time Warping (DTW)
         D, wp = librosa.sequence.dtw(X=mfcc_ref, Y=mfcc_gen, metric='euclidean')
         
         ref_indices = wp[:, 0]
@@ -59,10 +81,9 @@ class EvaluationSuite:
         mfcc_ref_aligned = mfcc_ref[:, ref_indices]
         mfcc_gen_aligned = mfcc_gen[:, gen_indices]
         
-        # --- FIX: Undo Librosa's 10x multiplier before applying MCD equation ---
-        diff = (mfcc_ref_aligned - mfcc_gen_aligned) / 10.0
+        # 7. Calculate formal MCD and average across frames
+        diff = mfcc_ref_aligned - mfcc_gen_aligned
         mcd_frames = (10.0 / np.log(10.0)) * np.sqrt(2.0 * np.sum(diff ** 2, axis=0))
-        # -----------------------------------------------------------------------
         
         return float(np.mean(mcd_frames))
 
@@ -75,16 +96,26 @@ class EvaluationSuite:
 
     def compute_wer(self, audio_path: str, ground_truth_text: str) -> float:
         """
-        Calculates Word Error Rate (WER).
-        Allows Whisper to auto-detect mixed languages for Code-Switched text.
+        Calculates Word Error Rate (WER) with Devanagari-to-Latin Transliteration.
         """
         if not self.use_whisper or not hasattr(self, 'asr_pipeline') or not os.path.exists(audio_path):
             return 15.0 
             
         try:
-            # --- FIX: Removed "language": "hindi" constraint ---
             result = self.asr_pipeline(audio_path, generate_kwargs={"task": "transcribe"})
-            transcribed_text = result["text"].strip()
+            raw_transcription = result["text"].strip()
+            
+            # --- TRANSLITERATION FIX ---
+            if HAS_TRANSLITERATION:
+                # Transliterate Devanagari script back to Latin (ITRANS phonetic English)
+                transcribed_text = sanscript.transliterate(raw_transcription, sanscript.DEVANAGARI, sanscript.ITRANS)
+            else:
+                transcribed_text = raw_transcription
+                
+            # DIAGNOSTIC CONSOLE LOGGING
+            print(f"\n  [Diagnostics] Ground Truth : {ground_truth_text}")
+            print(f"  [Diagnostics] Raw Whisper  : {raw_transcription}")
+            print(f"  [Diagnostics] Normalized   : {transcribed_text}")
             
             ref_words = ground_truth_text.lower().split()
             hyp_words = transcribed_text.lower().split()
@@ -101,6 +132,7 @@ class EvaluationSuite:
                     
             wer = (d[len(ref_words), len(hyp_words)] / max(len(ref_words), 1)) * 100.0
             return float(wer)
+            
         except Exception as e:
             print(f"  [!] Transcription failed on {audio_path}: {e}")
             return 15.0

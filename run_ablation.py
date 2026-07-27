@@ -51,46 +51,6 @@ class RealTTSEngine:
         )
         return np.array(out["wav"])
 
-
-def generate_ieee_latex_table(results: dict):
-    """Prints a camera-ready IEEE conference LaTeX table using booktabs."""
-    print("\n" + "="*85)
-    print("CAMERA-READY IEEE ICASSP LATEX TABLE (Copy & Paste directly into your .tex file)")
-    print("="*85)
-    
-    latex_str = [
-        r"\begin{table}[t]",
-        r"\centering",
-        r"\caption{Ablation Study on Zero-Shot Code-Switched Speech Synthesis Performance.}",
-        r"\label{tab:ablation_results}",
-        r"\resizebox{\columnwidth}{!}{%",
-        r"\begin{tabular}{l c c c c c}",
-        r"\toprule",
-        r"\textbf{Architecture Variant} & \textbf{MCD (dB)} $\downarrow$ & \textbf{SIM-R} $\uparrow$ & \textbf{WER (\%)} $\downarrow$ & $\Delta \mathbf{H(\mathcal{A}_\beta)}$ $\downarrow$ & \textbf{RTF} $\downarrow$ \\",
-        r"\midrule"
-    ]
-    
-    for arm, m in results.items():
-        # Clean arm names for formal paper display
-        clean_name = arm.replace("Arm 1 (Full System)", "Proposed (Full System)") \
-                        .replace("Arm 2 (Minus Guardrail)", "w/o Acoustic Guardrail") \
-                        .replace("Arm 3 (Minus L_entropy)", "w/o $\\mathcal{L}_{\\text{entropy}}$") \
-                        .replace("Arm 4 (Minus IPA Unification)", "w/o Phonetic Unification")
-        
-        row = f"{clean_name} & {m['MCD (dB) ↓']:.2f} & {m['SIM-R ↑']:.2f} & {m['WER (%) ↓']:.2f} & {m['H(A_Beta)-H(A_S) ↓']:.3f} & {m['RTF ↓']:.3f} \\\\"
-        latex_str.append(row)
-        
-    latex_str.extend([
-        r"\bottomrule",
-        r"\end{tabular}%",
-        r"}",
-        r"\end{table}"
-    ])
-    
-    print("\n".join(latex_str))
-    print("="*85 + "\n")
-
-
 def run_ablation_matrix(test_data: list, ref_voice_path: str, tts_model_path: str, ground_truth_dir: str):
     """Executes automated evaluation loops across the 4 Ablation Arms generating real .wav files."""
     print("="*85)
@@ -194,8 +154,6 @@ def run_ablation_matrix(test_data: list, ref_voice_path: str, tts_model_path: st
     print("="*90)
     print(f"[✓] Physical audio files saved to: {os.path.abspath(output_dir)}")
     
-    # Automatically output the camera-ready LaTeX code
-    generate_ieee_latex_table(results)
 
 
 if __name__ == "__main__":

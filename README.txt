@@ -112,3 +112,91 @@ Arm 3 (Minus L_entropy)        | 81.71      | 0.69     | 50.24      | 3.63      
 Arm 4 (Minus IPA Unification)  | 81.42      | 0.68     | 56.31      | 0.04        | 0.359 
 Arm 5 (Vanilla Baseline)       | 82.16      | 0.70     | 52.40      | 3.66        | 0.354 
 ===============================================================================================
+
+
+Loaded.
+
+================================================================================
+GPT MODEL
+================================================================================
+<class 'transformers.models.gpt2.modeling_gpt2.GPT2Model'>
+
+CONFIG
+GPT2Config {
+  "_attn_implementation_autoset": true,
+  "activation_function": "gelu_new",
+  "attn_pdrop": 0.1,
+  "bos_token_id": 50256,
+  "embd_pdrop": 0.1,
+  "eos_token_id": 50256,
+  "gradient_checkpointing": false,
+  "initializer_range": 0.02,
+  "layer_norm_epsilon": 1e-05,
+  "model_type": "gpt2",
+  "n_ctx": 1082,
+  "n_embd": 1024,
+  "n_head": 16,
+  "n_inner": null,
+  "n_layer": 30,
+  "n_positions": 1082,
+  "reorder_and_upcast_attn": false,
+  "resid_pdrop": 0.1,
+  "scale_attn_by_inverse_layer_idx": false,
+  "scale_attn_weights": true,
+  "summary_activation": null,
+  "summary_first_dropout": 0.1,
+  "summary_proj_to_labels": true,
+  "summary_type": "cls_index",
+  "summary_use_proj": true,
+  "transformers_version": "4.46.3",
+  "use_cache": true,
+  "vocab_size": 256
+}
+
+
+Number of layers: 30
+
+Attention implementation:
+sdpa
+
+
+================================================================================
+Attempting output_attentions=True
+================================================================================
+`GPT2SdpaAttention` is used but `torch.nn.functional.scaled_dot_product_attention` does not support `output_attentions=True` or `head_mask`. Falling back to the manual attention implementation, but specifying the manual implementation will be required from Transformers version v5.0.0 onwards. This warning can be removed using the argument `attn_implementation="eager"` when loading the model.
+
+Forward successful.
+outputs.attentions exists
+Returned 30 layers.
+Layer 0: (1, 16, 16, 16)
+Layer 1: (1, 16, 16, 16)
+Layer 2: (1, 16, 16, 16)
+Layer 3: (1, 16, 16, 16)
+Layer 4: (1, 16, 16, 16)
+Layer 5: (1, 16, 16, 16)
+Layer 6: (1, 16, 16, 16)
+Layer 7: (1, 16, 16, 16)
+Layer 8: (1, 16, 16, 16)
+Layer 9: (1, 16, 16, 16)
+Layer 10: (1, 16, 16, 16)
+Layer 11: (1, 16, 16, 16)
+Layer 12: (1, 16, 16, 16)
+Layer 13: (1, 16, 16, 16)
+Layer 14: (1, 16, 16, 16)
+Layer 15: (1, 16, 16, 16)
+Layer 16: (1, 16, 16, 16)
+Layer 17: (1, 16, 16, 16)
+Layer 18: (1, 16, 16, 16)
+Layer 19: (1, 16, 16, 16)
+Layer 20: (1, 16, 16, 16)
+Layer 21: (1, 16, 16, 16)
+Layer 22: (1, 16, 16, 16)
+Layer 23: (1, 16, 16, 16)
+Layer 24: (1, 16, 16, 16)
+Layer 25: (1, 16, 16, 16)
+Layer 26: (1, 16, 16, 16)
+Layer 27: (1, 16, 16, 16)
+Layer 28: (1, 16, 16, 16)
+Layer 29: (1, 16, 16, 16)
+
+Saved sample_attention.npy

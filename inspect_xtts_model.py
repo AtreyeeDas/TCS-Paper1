@@ -97,3 +97,14 @@ for name, module in model.named_modules():
         print(name)
         print(type(module))
         print("-" * 80)
+
+
+
+print("\n")
+print("=" * 80)
+print("MODEL DIRECTORY")
+print("=" * 80)
+
+for f in sorted(os.listdir(MODEL_DIR)):
+    print(f) 
+"""

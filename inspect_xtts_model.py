@@ -78,3 +78,22 @@ print("=" * 80)
 
 for name, module in model.named_modules():
     print(f"{name:80s} {type(module)}")
+"""
+print("\n")
+print("=" * 80)
+print("POSSIBLE ATTENTION MODULES")
+print("=" * 80)
+
+for name, module in model.named_modules():
+
+    cls = module.__class__.__name__.lower()
+
+    if (
+        "attn" in cls
+        or "attention" in cls
+        or "attn" in name.lower()
+        or "attention" in name.lower()
+    ):
+        print(name)
+        print(type(module))
+        print("-" * 80)

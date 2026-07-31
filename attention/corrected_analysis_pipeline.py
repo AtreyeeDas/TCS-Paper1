@@ -491,3 +491,17 @@ Traceback (most recent call last):
     return self.numpy().astype(dtype, copy=False)
 TypeError: can't convert cuda:0 device type tensor to numpy. Use Tensor.cpu() to copy the tensor to host memory first.
 """
+    # Build 4D Tensor: (T, L, H, K)
+    A = np.zeros((num_gen_steps, L, H, text_len))
+    for t in range(num_gen_steps):
+        for l in range(L):
+            last_q_attn = attentions[t][l][0, :, -1, :] # (H, K_total)
+            text_keys_attn = last_q_attn[:, audio_cond_len : audio_cond_len + text_len]
+            
+            # Move tensor to CPU and convert to NumPy BEFORE math and assignment
+            text_keys_attn = text_keys_attn.float().cpu().numpy()
+            
+            # Normalize over text keys to isolate focus on text
+            row_sums = text_keys_attn.sum(axis=1, keepdims=True)
+            row_sums[row_sums == 0] = 1.0
+            A[t, l, :, :] = text_keys_attn / row_sums

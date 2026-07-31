@@ -12,26 +12,74 @@ gpt_codes, generation_outputs = self.gpt.generate(
     repetition_penalty=repetition_penalty,
 
     output_attentions=True,
-    return_dict_in_generate=True,
+    output_hidden_states=True,
     output_scores=True,
+    return_dict_in_generate=True,
 
     **hf_generate_kwargs,
 )
+print("\n==========================")
+print("GENERATION OUTPUT")
+print("==========================")
+
+print(type(generation_outputs))
+
+print()
+
+print(generation_outputs.keys())
+
+print()
+
+print("Sequences shape:",
+      generation_outputs.sequences.shape)
+
+print()
+
+if generation_outputs.attentions is None:
+    print("ATTENTIONS = None")
+else:
+
+    print("Attention timesteps:",
+          len(generation_outputs.attentions))
+
+    print()
+
+    first = generation_outputs.attentions[0]
+
+    print("Type of first timestep:", type(first))
+
+    print("Number of layers:",
+          len(first))
+
+    print()
+
+    print("Layer0 shape:",
+          first[0].shape)
 
 
-attentions = generation_outputs.attentions
+from TTS.tts.configs.xtts_config import XttsConfig
+from TTS.tts.models.xtts import Xtts
 
-print(type(attentions))
+config = XttsConfig()
+config.load_json("/home/spark2/Models/XTTS-v2/config.json")
 
-print(len(attentions))
+model = Xtts.init_from_config(config)
 
+model.load_checkpoint(
+    config,
+    checkpoint_dir="/home/spark2/Models/XTTS-v2",
+    eval=True,
+)
 
+model.cuda()
 
-type(generation_outputs)
+result = model.synthesize(
 
-generation_outputs.keys()
+    text="Hello namaste kaise ho",
 
-type(generation_outputs.attentions)
+    config=config,
 
-len(generation_outputs.attentions)
+    speaker_wav="Monika_ref_5s.wav",
 
+    language="en",
+)

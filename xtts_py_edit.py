@@ -102,3 +102,21 @@ Number of layers: 30
 
 Layer0 shape: torch.Size([1, 16, 48, 48])
 """
+import pickle
+import os
+
+save_dir = hf_generate_kwargs.get("attention_save_dir", None)
+
+if save_dir is not None:
+    os.makedirs(save_dir, exist_ok=True)
+
+    with open(os.path.join(save_dir, "generation_attentions.pkl"), "wb") as f:
+        pickle.dump(generation_outputs.attentions, f)
+
+    with open(os.path.join(save_dir, "generation_hidden_states.pkl"), "wb") as f:
+        pickle.dump(generation_outputs.hidden_states, f)
+
+    torch.save(
+        text_tokens.detach().cpu(),
+        os.path.join(save_dir, "text_tokens.pt")
+    )

@@ -474,3 +474,20 @@ def main():
 
 if __name__ == "__main__":
     main()
+"""
+. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import resource_filename
+2026-07-31 15:14:54,467 [INFO] Logging initialized. Output directory: ./corrected_analysis_results
+2026-07-31 15:14:54,468 [INFO] Loading XTTS tokenizer from /home/spark2/Models/XTTS-v2/config.json
+2026-07-31 15:14:54,473 [INFO] Extracting un-averaged T x L x H x K matrices and mapping Soft Alignments...
+Traceback (most recent call last):
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/corrected_analysis_pipeline.py", line 476, in <module>
+    main()
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/corrected_analysis_pipeline.py", line 455, in main
+    res = process_utterance(u_dir, tokenizer)
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/corrected_analysis_pipeline.py", line 249, in process_utterance
+    A[t, l, :, :] = text_keys_attn / row_sums
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/_tensor.py", line 1257, in __array__
+    return self.numpy().astype(dtype, copy=False)
+TypeError: can't convert cuda:0 device type tensor to numpy. Use Tensor.cpu() to copy the tensor to host memory first.
+"""

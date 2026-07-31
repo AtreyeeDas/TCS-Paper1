@@ -1,0 +1,427 @@
+Config loaded.
+
+Model successfully loaded.
+
+Loaded 20 examples
+
+======================================================================
+0 103085_w5Jyq3XMbb3WwiKQ_0000
+लिबर ऑफिस impress में एक प्रस्तुति document बनाना और बुनियादी formatting के इस spoken tutorial में आपका स्वागत है
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 278])
+
+Attention timesteps: 177
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 101, 101])
+
+======================================================================
+1 103085_w5Jyq3XMbb3WwiKQ_0001
+इस tutorial में हम impress window के भागों के बारे में सीखेंगे और कैसे स्लाइड इन्सर्ट करें और कॉपी करें फॉन्ट तथा फॉन्ट को फॉर्मेट करना सीखेंगे
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 274])
+
+Attention timesteps: 151
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 123, 123])
+
+======================================================================
+2 103085_w5Jyq3XMbb3WwiKQ_0002
+यहाँ हम अपने ऑपरेटिंग सिस्टम के रूप में gnu/linux और लिबरऑफिस वर्जन 334 का उपयोग कर रहे हैं
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 273])
+
+Attention timesteps: 170
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 103, 103])
+
+======================================================================
+3 103085_w5Jyq3XMbb3WwiKQ_0003
+चलिए अपनी प्रस्तुति प्रेजैटेशन sample impress open करते हैं जिसे पिछले tutorial में बनाया था
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 226])
+
+Attention timesteps: 141
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 85, 85])
+
+======================================================================
+4 103085_w5Jyq3XMbb3WwiKQ_0004
+चलिए देखते हैं कि screen पर क्या क्या है
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 144])
+
+Attention timesteps: 87
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 57, 57])
+
+======================================================================
+5 103085_w5Jyq3XMbb3WwiKQ_0005
+मध्य में हम खाली जगह देखते है जोकि workspace है जहाँ हम काम करेंगे
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 213])
+
+Attention timesteps: 138
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 75, 75])
+
+======================================================================
+6 103085_w5Jyq3XMbb3WwiKQ_0006
+जैसे कि आप देख सकते हैं workspace में 5 tabs हैं जिन्हें view buttons कहते हैं
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 204])
+
+Attention timesteps: 124
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 80, 80])
+
+======================================================================
+7 103085_w5Jyq3XMbb3WwiKQ_0007
+फिलहाल normal टैब चुनित हैं
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 124])
+
+Attention timesteps: 70
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 54, 54])
+
+======================================================================
+8 103085_w5Jyq3XMbb3WwiKQ_0008
+यह मुख्य view है अलगअलग slides बनाने के लिए
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 145])
+
+Attention timesteps: 84
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 61, 61])
+
+======================================================================
+9 103085_w5Jyq3XMbb3WwiKQ_0009
+outline view प्रत्येक slide के outline format में विषय शीर्षक bulleted और क्रमांकित सूचियाँ बताता है
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 233])
+
+Attention timesteps: 139
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 94, 94])
+
+======================================================================
+10 103085_w5Jyq3XMbb3WwiKQ_0010
+notes view प्रत्येक slide में notes जोड़ने की सुविधा देता है जोकि प्रस्तुतिकरण के वक्त नज़र नहीं the
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 249])
+
+Attention timesteps: 157
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 92, 92])
+
+======================================================================
+11 103085_w5Jyq3XMbb3WwiKQ_0011
+handout view slides को हैन्डाउट के रूप में print करने की सुविधा देता है
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 192])
+
+Attention timesteps: 116
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 76, 76])
+
+======================================================================
+12 103085_w5Jyq3XMbb3WwiKQ_0012
+यहाँ हमें एक पेज पर कितने slides print करने हैं इसका चुनाव कर सकते हैं
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 196])
+
+Attention timesteps: 119
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 77, 77])
+
+======================================================================
+13 103085_w5Jyq3XMbb3WwiKQ_0013
+slide sorter view slides की थम्बनेल बताता है
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 166])
+
+Attention timesteps: 104
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 62, 62])
+
+======================================================================
+14 103085_w5Jyq3XMbb3WwiKQ_0014
+अब फिर से normal view button पर click करते हैं
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 154])
+
+Attention timesteps: 92
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 62, 62])
+
+======================================================================
+15 103085_w5Jyq3XMbb3WwiKQ_0015
+screen की बाईं ओर आप slides pane देखते हैं यह प्रस्तुति में slides के थम्बनेल सम्मिलित करता है
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 247])
+
+Attention timesteps: 154
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 93, 93])
+
+======================================================================
+16 103085_w5Jyq3XMbb3WwiKQ_0016
+दाएँ तरफ tasks pane हैं जिसमें अनुभाग है
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 175])
+
+Attention timesteps: 116
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 59, 59])
+
+======================================================================
+17 103085_w5Jyq3XMbb3WwiKQ_0017
+लेआउट्स section में पहले से ही कुछ सैम्पल लेआउट्स मौजूद हैं
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 191])
+
+Attention timesteps: 115
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 76, 76])
+
+======================================================================
+18 103085_w5Jyq3XMbb3WwiKQ_0018
+हम उनका उपयोग ऐसे ही कर सकते हैं या आवश्यकता अनुसार कुछ बदलाव करके उपयोग कर सकते हैं
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 242])
+
+Attention timesteps: 156
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 86, 86])
+
+======================================================================
+19 103085_w5Jyq3XMbb3WwiKQ_0019
+जैसे जैसे हम इन tutorial में आगे बढ़ेंगे इन sections को विस्तार में देखेंगे
+======================================================================
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 196])
+
+Attention timesteps: 119
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 77, 77])
+
+DONE

@@ -472,3 +472,35 @@ Traceback (most recent call last):
     raise TypeError(f'Object of type {o.__class__.__name__} '
 TypeError: Object of type int64 is not JSON serializable
 """
+def compute_statistics(df):
+    """
+    Performs rigorous statistical testing (Paired t-test, Wilcoxon, Cohen's d).
+    Casts all outputs to native Python types for JSON serialization.
+    """
+    b_ent = df['boundary_entropy'].to_numpy()
+    n_ent = df['neighbour_entropy'].to_numpy()
+    
+    # Paired t-test
+    t_stat, p_val_t = stats.ttest_rel(b_ent, n_ent)
+    
+    # Wilcoxon signed-rank test
+    w_stat, p_val_w = stats.wilcoxon(b_ent, n_ent)
+    
+    # Cohen's d
+    diff = b_ent - n_ent
+    effect_size = np.mean(diff) / np.std(diff, ddof=1)
+    
+    stats_results = {
+        "avg_boundary": float(np.mean(b_ent)),
+        "avg_neighbour": float(np.mean(n_ent)),
+        "avg_global": float(df['global_entropy'].mean()),
+        "t_stat": float(t_stat),
+        "p_val_t": float(p_val_t),
+        "w_stat": float(w_stat),
+        "p_val_w": float(p_val_w),
+        "cohens_d": float(effect_size),
+        "total_boundaries": int(df['num_boundaries'].sum()),
+        "total_utterances": int(len(df))
+    }
+    
+    return stats_results

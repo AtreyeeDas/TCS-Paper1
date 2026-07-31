@@ -295,8 +295,6 @@ def compute_statistics(df):
     
     return stats_results
 
-
-
 def generate_figures(results_list, df, output_dir):
     """
     Generates and saves the 5 required ICASSP figures.
@@ -447,22 +445,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-"""
-==================================================
-FINAL ANALYSIS SUMMARY
-==================================================
-Total Utterances Analyzed : 19
-Total Boundaries Detected : 72
-Average Boundary Entropy  : 5.0686 bits
-Average Neighbour Entropy : 5.0685 bits
-Average Global Entropy    : 5.0684 bits
---------------------------------------------------
-STATISTICAL SIGNIFICANCE
-Paired t-test p-value     : 6.4108e-01
-Wilcoxon p-value          : 3.7775e-01
-Effect Size (Cohen's d)   : 0.1088
-==================================================
-
-2026-07-31 14:24:57,027 [INFO] Pipeline execution completed successfully.
-"""

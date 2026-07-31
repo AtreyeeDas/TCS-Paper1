@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-
+import pickle
 import librosa
 import torch
 import torch.nn.functional as F
@@ -518,6 +518,7 @@ class Xtts(BaseTTS):
         enable_text_splitting=False,
         **hf_generate_kwargs,
     ):
+        save_dir = hf_generate_kwargs.pop("attention_save_dir", None)
         language = language.split("-")[0]  # remove the country code
         length_scale = 1.0 / max(speed, 0.05)
         gpt_cond_latent = gpt_cond_latent.to(self.device)
@@ -576,9 +577,17 @@ class Xtts(BaseTTS):
                     print("Number of layers:",len(first))
                     print()
                     print("Layer0 shape:",first[0].shape)
-                expected_output_len = torch.tensor(
-                    [gpt_codes.shape[-1] * self.gpt.code_stride_len], device=text_tokens.device
-                )
+                    if save_dir is not None:
+                        os.makedirs(save_dir, exist_ok=True)
+                        with open(os.path.join(save_dir, "generation_attentions.pkl"), "wb") as f:
+                            pickle.dump(generation_outputs.attentions, f)
+                        with open(os.path.join(save_dir, "generation_hidden_states.pkl"), "wb") as f:
+                            pickle.dump(generation_outputs.hidden_states, f)
+                        torch.save(text_tokens.detach().cpu(), os.path.join(save_dir, "text_tokens.pt"))
+                    
+                    
+                    expected_output_len = torch.tensor(
+                    [gpt_codes.shape[-1] * self.gpt.code_stride_len], device=text_tokens.device)
 
                 text_len = torch.tensor([text_tokens.shape[-1]], device=self.device)
                 gpt_latents = self.gpt(

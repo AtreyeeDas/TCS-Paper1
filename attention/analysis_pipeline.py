@@ -1,555 +1,447 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+analysis_pipeline.py
+
+Complete pipeline for analyzing autoregressive attention entropy around 
+code-switch boundaries (English <-> Hindi) in Zero-Shot CS-TTS.
+Designed for Coqui XTTS-v2 HuggingFace GPT2 backbone.
+"""
+
 import os
-import re
-import csv
+import glob
 import json
 import pickle
-import logging
 import argparse
-import numpy as np
+import logging
+import warnings
+from collections import defaultdict
+
 import torch
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import scipy.stats as stats
+from scipy import stats
 from tqdm import tqdm
 
-# ==========================================
-# CONFIGURATION & LOGGING
-# ==========================================
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler()]
-)
+# XTTS specific imports
+from TTS.tts.configs.xtts_config import XttsConfig
+from TTS.tts.layers.xtts.tokenizer import VoiceBpeTokenizer
 
-# ==========================================
-# HELPER FUNCTIONS
-# ==========================================
-def load_tokenizer(config_path):
-    """Reloads the exact VoiceBpeTokenizer used during generation."""
-    logging.info(f"Loading VoiceBpeTokenizer using config directory: {config_path}")
+# Suppress minor warnings for clean ICASSP logs
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+
+
+def setup_logging(output_dir):
+    """Initializes logging to both console and file."""
+    os.makedirs(output_dir, exist_ok=True)
+    log_file = os.path.join(output_dir, 'analysis_pipeline.log')
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler()
+        ]
+    )
+    logging.info(f"Logging initialized. Results will be saved to {output_dir}")
+
+
+def load_xtts_tokenizer(config_path):
+    """Reloads the XTTS tokenizer using the config and vocabulary."""
+    logging.info(f"Loading XTTS tokenizer from {config_path}")
     try:
-        from TTS.tts.layers.xtts.tokenizer import VoiceBpeTokenizer
-        
-        # The vocab file is typically stored alongside the config.json
-        model_dir = os.path.dirname(config_path)
-        vocab_path = os.path.join(model_dir, "vocab.json")
-        
-        if not os.path.exists(vocab_path):
-            raise FileNotFoundError(f"vocab.json not found in {model_dir}")
-            
+        config = XttsConfig()
+        config.load_json(config_path)
+        vocab_path = os.path.join(os.path.dirname(config_path), "vocab.json")
         tokenizer = VoiceBpeTokenizer(vocab_file=vocab_path)
         return tokenizer
     except Exception as e:
-        logging.error(f"Failed to load VoiceBpeTokenizer: {e}")
+        logging.error(f"Failed to load tokenizer: {e}")
         raise
 
-def classify_token(token_str):
-    """Classifies token into ENGLISH, HINDI, SPECIAL, SPACE, or OTHER."""
-    token_str = token_str.strip()
-    if not token_str:
+
+def classify_token(text):
+    """
+    Classifies a decoded token string into ENGLISH, HINDI, SPACE, SPECIAL, or OTHER
+    using precise Unicode block detection.
+    """
+    if not text:
         return "SPACE"
-    if re.match(r'^\[[a-zA-Z0-9_]+\]$', token_str):
+    
+    # Check for XTTS/HuggingFace special tokens
+    special_tokens = ["[START]", "[STOP]", "[en]", "[hi]", "[zh]"]
+    if text in special_tokens or (text.startswith("[") and text.endswith("]")):
         return "SPECIAL"
-    if re.search(r'[\u0900-\u097F]', token_str):
+        
+    if text.isspace() or text == "_" or text == " ":
+        return "SPACE"
+        
+    # Devanagari Unicode Block: \u0900 - \u097F
+    if any('\u0900' <= c <= '\u097F' for c in text):
         return "HINDI"
-    if re.search(r'[a-zA-Z]', token_str):
+        
+    # Basic Latin Block
+    if any('a' <= c.lower() <= 'z' for c in text):
         return "ENGLISH"
+        
     return "OTHER"
 
-def compute_shannon_entropy(prob_dist):
-    """Computes Shannon entropy of a probability distribution."""
-    prob_dist = prob_dist / (np.sum(prob_dist) + 1e-12)
-    return -np.sum(prob_dist * np.log2(prob_dist + 1e-12))
 
-def cohens_d(x, y):
-    """Computes Cohen's d effect size for two paired arrays."""
-    diff = x - y
-    return np.mean(diff) / (np.std(diff, ddof=1) + 1e-12)
+def detect_boundaries(token_classes):
+    """
+    Detects English <-> Hindi transitions.
+    Returns a list of tuples: (idx_before_boundary, idx_after_boundary)
+    """
+    boundaries = []
+    last_lang = None
+    last_lang_idx = -1
+    
+    for i, cls in enumerate(token_classes):
+        if cls in ["ENGLISH", "HINDI"]:
+            if last_lang is not None and cls != last_lang:
+                boundaries.append((last_lang_idx, i))
+            last_lang = cls
+            last_lang_idx = i
+            
+    return boundaries
 
-# ==========================================
-# CORE ANALYSIS PIPELINE
-# ==========================================
-def analyze_utterance(utterance_dir, tokenizer, window_size=5):
-    """Processes a single utterance folder to extract boundary/non-boundary entropy."""
-    attentions_path = os.path.join(utterance_dir, "generation_attentions.pkl")
+
+def compute_shannon_entropy(probs):
+    """
+    Computes Shannon entropy: H(P) = -sum(P * log2(P))
+    probs: numpy array of shape (N,)
+    """
+    probs = np.clip(probs, 1e-12, 1.0)
+    entropy = -np.sum(probs * np.log2(probs))
+    return entropy
+
+
+def process_utterance(utterance_dir, tokenizer, window_size=5):
+    """
+    Processes a single utterance directory.
+    Reconstructs the GenerationStep x KeyPosition matrix, aligns audio tokens to text,
+    and extracts boundary vs. neighbour entropies.
+    """
+    attention_path = os.path.join(utterance_dir, "generation_attentions.pkl")
     tokens_path = os.path.join(utterance_dir, "text_tokens.pt")
     
-    if not (os.path.exists(attentions_path) and os.path.exists(tokens_path)):
+    if not os.path.exists(attention_path) or not os.path.exists(tokens_path):
+        logging.warning(f"Missing required files in {utterance_dir}. Skipping.")
+        return None
+
+    # Load text tokens
+    text_tokens = torch.load(tokens_path, map_location="cpu")
+    if text_tokens.dim() > 1:
+        text_tokens = text_tokens.squeeze(0)
+    text_len = text_tokens.shape[0]
+    
+    # Decode and classify
+    decoded_tokens = []
+    token_classes = []
+    for token_id in text_tokens.tolist():
+        text_str = tokenizer.decode([token_id])
+        cls = classify_token(text_str)
+        decoded_tokens.append(text_str)
+        token_classes.append(cls)
+        
+    boundaries = detect_boundaries(token_classes)
+    if not boundaries:
+        return None # Skip utterances with no code-switching
+        
+    # Load generation attentions
+    with open(attention_path, "rb") as f:
+        attentions = pickle.load(f)
+        
+    num_gen_steps = len(attentions)
+    if num_gen_steps == 0:
         return None
         
-    with open(attentions_path, 'rb') as f:
-        attentions = pickle.load(f)
+    # Determine the audio condition length to isolate text keys
+    # attention shape at t=0: (batch, heads, q_len, k_len)
+    first_step_attn = attentions[0][0]
+    total_prompt_len = first_step_attn.shape[-1]
     
-    text_tokens = torch.load(tokens_path, map_location='cpu').squeeze().tolist()
-    if not isinstance(text_tokens, list):
-        text_tokens = [text_tokens]
+    if total_prompt_len < text_len:
+        logging.warning(f"Total prompt length ({total_prompt_len}) < text length ({text_len}) in {utterance_dir}. Skipping.")
+        return None
         
-    num_text_tokens = len(text_tokens)
+    audio_cond_len = total_prompt_len - text_len
     
-    # 1. Decode and Classify Tokens
-    decoded_tokens = [tokenizer.decode([t]) for t in text_tokens]
-    token_classes = [classify_token(t) for t in decoded_tokens]
+    # Reconstruct GenerationStep x TextKeyPosition matrix (Head & Layer Averaged)
+    gen_text_attn = np.zeros((num_gen_steps, text_len))
     
-    # 2. Detect Language Boundaries (English <-> Hindi)
-    boundaries = []
-    for i in range(1, num_text_tokens):
-        prev_cls = token_classes[i-1]
-        curr_cls = token_classes[i]
-        valid_langs = {"ENGLISH", "HINDI"}
-        if prev_cls in valid_langs and curr_cls in valid_langs and prev_cls != curr_cls:
-            boundaries.append(i)
+    for t in range(num_gen_steps):
+        step_layers = attentions[t]
+        layer_tensors = []
+        for layer_attn in step_layers:
+            # layer_attn shape: (batch, heads, q, k)
+            # We take the last query vector (the currently generated token)
+            last_q_attn = layer_attn[0, :, -1, :] # shape (heads, k)
             
-    # 3. Reconstruct GenerationStep x KeyPosition matrix (Averaged across heads/layers)
-    num_gen_steps = len(attentions)
-    attn_matrix = np.zeros((num_gen_steps, num_text_tokens))
-    
-    for t_step in range(num_gen_steps):
-        step_attns = attentions[t_step] 
-        num_layers = len(step_attns)
-        layer_avg = 0
-        for layer_idx in range(num_layers):
-            # Shape: (batch, heads, q_len, k_len). Isolate the last query attending to text keys.
-            attn = step_attns[layer_idx][0].cpu().numpy() 
-            q_attn = attn[:, -1, :num_text_tokens] 
-            layer_avg += np.mean(q_attn, axis=0)
+            # Slice out only the text token keys
+            text_keys_attn = last_q_attn[:, audio_cond_len : audio_cond_len + text_len]
+            layer_tensors.append(text_keys_attn)
+            
+        # Stack and average across layers and heads
+        step_tensor = torch.stack(layer_tensors) # (num_layers, num_heads, text_len)
+        step_avg = step_tensor.mean(dim=(0, 1)).float().cpu().numpy()
         
-        layer_avg /= num_layers
-        # Normalize to create a valid probability distribution over text tokens
-        layer_avg /= (np.sum(layer_avg) + 1e-12)
-        attn_matrix[t_step, :] = layer_avg
+        # Normalize to form a valid probability distribution over text tokens
+        step_sum = step_avg.sum()
+        if step_sum > 0:
+            step_avg = step_avg / step_sum
+        else:
+            step_avg = np.ones_like(step_avg) / len(step_avg)
+            
+        gen_text_attn[t, :] = step_avg
 
-    # 4. Compute Entropy per Generation Step
-    step_entropies = np.array([compute_shannon_entropy(attn_matrix[t, :]) for t in range(num_gen_steps)])
+    # Compute entropy for each generation step
+    step_entropies = np.array([compute_shannon_entropy(gen_text_attn[t, :]) for t in range(num_gen_steps)])
     
-    # 5. Map Generation Steps to Text Tokens (via argmax attention)
-    aligned_text_indices = np.argmax(attn_matrix, axis=1)
+    # Align text tokens to generation steps (argmax mapping)
+    # text_token_entropies[i] will store all step entropies that maximally attended to text token i
+    alignment_mapping = defaultdict(list)
+    for t in range(num_gen_steps):
+        max_attended_text_idx = np.argmax(gen_text_attn[t, :])
+        alignment_mapping[max_attended_text_idx].append(step_entropies[t])
+        
+    text_token_entropies = np.full(text_len, np.nan)
+    for idx in range(text_len):
+        if idx in alignment_mapping and len(alignment_mapping[idx]) > 0:
+            text_token_entropies[idx] = np.mean(alignment_mapping[idx])
+            
+    # Interpolate NaNs for text tokens that received no maximal attention
+    df_interp = pd.Series(text_token_entropies).interpolate(limit_direction='both')
+    text_token_entropies = df_interp.to_numpy()
+
+    # Extract Boundary, Neighbour, and Global entropies
+    global_entropy = np.nanmean(text_token_entropies)
     
     boundary_entropies = []
-    non_boundary_entropies = []
+    neighbour_entropies = []
     
-    for t_step in range(num_gen_steps):
-        focused_token = aligned_text_indices[t_step]
+    for (idx1, idx2) in boundaries:
+        b_val1 = text_token_entropies[idx1]
+        b_val2 = text_token_entropies[idx2]
         
-        # Check if the focused token is within the window of any boundary
-        is_boundary = False
-        for b_idx in boundaries:
-            if abs(focused_token - b_idx) <= window_size:
-                is_boundary = True
-                break
-                
-        if is_boundary:
-            boundary_entropies.append(step_entropies[t_step])
-        else:
-            non_boundary_entropies.append(step_entropies[t_step])
+        if not np.isnan(b_val1) and not np.isnan(b_val2):
+            boundary_entropies.append((b_val1 + b_val2) / 2.0)
             
-    return {
-        "utterance": os.path.basename(utterance_dir),
-        "attn_matrix": attn_matrix,
-        "step_entropies": step_entropies,
-        "boundaries": boundaries,
-        "aligned_text_indices": aligned_text_indices,
-        "avg_boundary_entropy": np.mean(boundary_entropies) if boundary_entropies else np.nan,
-        "avg_non_boundary_entropy": np.mean(non_boundary_entropies) if non_boundary_entropies else np.nan,
-        "num_boundaries": len(boundaries)
-    }
+        # Local window
+        start_idx = max(0, min(idx1, idx2) - window_size)
+        end_idx = min(text_len, max(idx1, idx2) + window_size + 1)
+        
+        n_vals = []
+        for i in range(start_idx, end_idx):
+            if i != idx1 and i != idx2 and not np.isnan(text_token_entropies[i]):
+                n_vals.append(text_token_entropies[i])
+                
+        if n_vals:
+            neighbour_entropies.append(np.mean(n_vals))
 
-# ==========================================
-# VISUALIZATION & EXPORT
-# ==========================================
-def generate_figures(results, output_dir):
-    logging.info("Generating analytical figures...")
+    if not boundary_entropies or not neighbour_entropies:
+        return None
+
+    # We return the mean for this utterance to do utterance-level statistics
+    result = {
+        "utt_id": os.path.basename(os.path.normpath(utterance_dir)),
+        "boundary_entropy": np.mean(boundary_entropies),
+        "neighbour_entropy": np.mean(neighbour_entropies),
+        "global_entropy": global_entropy,
+        "num_boundaries": len(boundaries),
+        "matrix": gen_text_attn,
+        "text_token_entropies": text_token_entropies,
+        "boundaries": boundaries,
+        "decoded_tokens": decoded_tokens
+    }
     
-    # Extract clean data for plotting
-    clean_results = [r for r in results if not np.isnan(r['avg_boundary_entropy']) and not np.isnan(r['avg_non_boundary_entropy'])]
-    b_ents = [r['avg_boundary_entropy'] for r in clean_results]
-    nb_ents = [r['avg_non_boundary_entropy'] for r in clean_results]
+    return result
+
+
+def compute_statistics(df):
+    """
+    Performs rigorous statistical testing (Paired t-test, Wilcoxon, Cohen's d).
+    """
+    b_ent = df['boundary_entropy'].to_numpy()
+    n_ent = df['neighbour_entropy'].to_numpy()
+    
+    # Paired t-test
+    t_stat, p_val_t = stats.ttest_rel(b_ent, n_ent)
+    
+    # Wilcoxon signed-rank test
+    w_stat, p_val_w = stats.wilcoxon(b_ent, n_ent)
+    
+    # Cohen's d
+    diff = b_ent - n_ent
+    effect_size = np.mean(diff) / np.std(diff, ddof=1)
+    
+    stats_results = {
+        "avg_boundary": np.mean(b_ent),
+        "avg_neighbour": np.mean(n_ent),
+        "avg_global": df['global_entropy'].mean(),
+        "t_stat": t_stat,
+        "p_val_t": p_val_t,
+        "w_stat": w_stat,
+        "p_val_w": p_val_w,
+        "cohens_d": effect_size,
+        "total_boundaries": df['num_boundaries'].sum(),
+        "total_utterances": len(df)
+    }
+    
+    return stats_results
+
+
+def generate_figures(results_list, df, output_dir):
+    """
+    Generates and saves the 5 required ICASSP figures.
+    """
+    sns.set_theme(style="whitegrid", context="paper")
+    
+    # Select the first valid utterance for sequence-specific plots (A and B)
+    sample = results_list[0]
+    
+    # A. Heatmap with language boundary overlaid
+    plt.figure(figsize=(10, 6))
+    sns.heatmap(sample["matrix"].T, cmap="viridis", cbar_kws={'label': 'Attention Weight'})
+    plt.title(f"Decoder Attention over Text Tokens\n{sample['utt_id']}")
+    plt.xlabel("Autoregressive Generation Step")
+    plt.ylabel("Text Token Index")
+    # Overlay boundaries
+    for (idx1, idx2) in sample["boundaries"]:
+        b_idx = (idx1 + idx2) / 2.0
+        plt.axhline(y=b_idx, color='red', linestyle='--', linewidth=2, label='CS Boundary' if b_idx == (sample["boundaries"][0][0]+sample["boundaries"][0][1])/2 else "")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "A_attention_heatmap.png"), dpi=300)
+    plt.close()
+    
+    # B. Entropy curve with boundary marker
+    plt.figure(figsize=(10, 4))
+    x_axis = np.arange(len(sample["text_token_entropies"]))
+    plt.plot(x_axis, sample["text_token_entropies"], marker='o', linestyle='-', color='b')
+    plt.title(f"Attention Entropy aligned to Text Tokens\n{sample['utt_id']}")
+    plt.xlabel("Text Token Index")
+    plt.ylabel("Shannon Entropy (bits)")
+    for (idx1, idx2) in sample["boundaries"]:
+        b_idx = (idx1 + idx2) / 2.0
+        plt.axvline(x=b_idx, color='red', linestyle='--', linewidth=2)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "B_entropy_curve.png"), dpi=300)
+    plt.close()
+    
+    # C. Average entropy over all utterances (Bar chart)
+    plt.figure(figsize=(6, 5))
+    means = [df['boundary_entropy'].mean(), df['neighbour_entropy'].mean(), df['global_entropy'].mean()]
+    std_errs = [stats.sem(df['boundary_entropy']), stats.sem(df['neighbour_entropy']), stats.sem(df['global_entropy'])]
+    sns.barplot(x=['Boundary', 'Neighbour (±5)', 'Global'], y=means, capsize=0.1, errorbar=None)
+    plt.errorbar(x=[0, 1, 2], y=means, yerr=std_errs, fmt='none', c='black', capsize=5)
+    plt.title("Average Attention Entropy")
+    plt.ylabel("Shannon Entropy (bits)")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "C_average_entropy.png"), dpi=300)
+    plt.close()
     
     # D. Boundary vs Non-boundary boxplot
-    plt.figure(figsize=(8, 6))
-    sns.boxplot(data=[b_ents, nb_ents], palette="Set2")
-    plt.xticks([0, 1], ["Boundary\n(±5 tokens)", "Non-Boundary"])
+    plt.figure(figsize=(6, 5))
+    melted_df = df.melt(value_vars=['boundary_entropy', 'neighbour_entropy'], 
+                        var_name='Region', value_name='Entropy')
+    melted_df['Region'] = melted_df['Region'].map({'boundary_entropy': 'Boundary', 'neighbour_entropy': 'Neighbour (±5)'})
+    sns.boxplot(x='Region', y='Entropy', data=melted_df, palette="Set2")
+    plt.title("Entropy Distribution: Boundary vs Neighbour")
     plt.ylabel("Shannon Entropy (bits)")
-    plt.title("Cross-Attention Entropy Distribution")
-    plt.savefig(os.path.join(output_dir, "entropy_boxplot.png"), dpi=300)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "D_boundary_vs_neighbour_boxplot.png"), dpi=300)
     plt.close()
     
     # E. Histogram of entropy difference
-    plt.figure(figsize=(8, 6))
-    diffs = np.array(b_ents) - np.array(nb_ents)
-    sns.histplot(diffs, bins=30, kde=True, color="purple")
-    plt.axvline(0, color='black', linestyle='--')
-    plt.xlabel("Entropy Difference (Boundary - Non-Boundary)")
-    plt.ylabel("Frequency (Utterances)")
-    plt.title("Distribution of Entropy Differentials")
-    plt.savefig(os.path.join(output_dir, "entropy_difference_hist.png"), dpi=300)
+    plt.figure(figsize=(7, 5))
+    diff = df['boundary_entropy'] - df['neighbour_entropy']
+    sns.histplot(diff, bins=20, kde=True, color='purple')
+    plt.axvline(x=0, color='black', linestyle='--')
+    plt.title("Histogram of Entropy Differences (Boundary - Neighbour)")
+    plt.xlabel("Entropy Difference (bits)")
+    plt.ylabel("Frequency")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "E_entropy_difference_hist.png"), dpi=300)
     plt.close()
-    
-    # A & B. Heatmap and Entropy Curve (Using the first utterance with a boundary as an example)
-    example_res = next((r for r in clean_results if r['num_boundaries'] > 0), None)
-    if example_res:
-        # Heatmap
-        plt.figure(figsize=(12, 8))
-        sns.heatmap(example_res['attn_matrix'].T, cmap="viridis", cbar_kws={'label': 'Attention Weight'})
-        for b_idx in example_res['boundaries']:
-            plt.axhline(b_idx, color='red', linestyle='--', alpha=0.7, label="Code-Switch Boundary")
-        plt.xlabel("Generation Step")
-        plt.ylabel("Text Token Index")
-        plt.title(f"Decoder Attention Mapping: {example_res['utterance']}")
-        plt.savefig(os.path.join(output_dir, f"heatmap_{example_res['utterance']}.png"), dpi=300)
-        plt.close()
-        
-        # Entropy curve
-        plt.figure(figsize=(12, 4))
-        plt.plot(example_res['step_entropies'], label="Step Entropy", color='blue')
-        
-        # Highlight boundary regions
-        for t_step, focus in enumerate(example_res['aligned_text_indices']):
-            if any(abs(focus - b) <= 5 for b in example_res['boundaries']):
-                plt.scatter(t_step, example_res['step_entropies'][t_step], color='red', s=10)
-                
-        plt.xlabel("Generation Step")
-        plt.ylabel("Entropy")
-        plt.title(f"Autoregressive Entropy Trajectory: {example_res['utterance']}")
-        plt.savefig(os.path.join(output_dir, f"entropy_curve_{example_res['utterance']}.png"), dpi=300)
-        plt.close()
 
-# ==========================================
-# MAIN EXECUTION
-# ==========================================
+
 def main():
-    parser = argparse.ArgumentParser(description="Analyze Code-Switched XTTS Attention Entropy")
-    parser.add_argument("--results_dir", type=str, default="xtts_attention_results", help="Path to XTTS outputs")
-    parser.add_argument("--config_path", type=str, default="/home/spark2/Models/XTTS-v2/config.json", help="XTTS config")
-    parser.add_argument("--output_dir", type=str, default="analysis_results", help="Directory for final analysis assets")
-    parser.add_argument("--window", type=int, default=5, help="Token window around boundary to classify as localized")
+    parser = argparse.ArgumentParser(description="Extracts and analyzes XTTS GPT cross-attention for CS-TTS Boundaries.")
+    parser.add_argument("--data_dir", type=str, default="./xtts_attention_results", help="Directory containing the utterance folders.")
+    parser.add_argument("--config_path", type=str, default="/home/spark2/Models/XTTS-v2/config.json", help="Path to XTTS config.json.")
+    parser.add_argument("--output_dir", type=str, default="./analysis_results", help="Directory to save plots and CSVs.")
+    parser.add_argument("--window_size", type=int, default=5, help="Tokens to include in the neighbour window.")
     args = parser.parse_args()
 
-    os.makedirs(args.output_dir, exist_ok=True)
-    tokenizer = load_tokenizer(args.config_path)
+    setup_logging(args.output_dir)
     
-    utterances = [os.path.join(args.results_dir, d) for d in os.listdir(args.results_dir) if os.path.isdir(os.path.join(args.results_dir, d))]
-    utterances.sort()
+    # 1. Load Tokenizer
+    tokenizer = load_xtts_tokenizer(args.config_path)
     
-    results = []
-    logging.info(f"Starting analysis on {len(utterances)} utterances...")
+    # 2. Iterate over utterances
+    utterance_dirs = glob.glob(os.path.join(args.data_dir, "*_*"))
+    utterance_dirs = [d for d in utterance_dirs if os.path.isdir(d)]
     
-    for utt_dir in tqdm(utterances, desc="Processing Utterances"):
-        res = analyze_utterance(utt_dir, tokenizer, window_size=args.window)
-        if res is not None:
-            results.append(res)
-            
-    # Filter out samples lacking boundary data
-    valid_results = [r for r in results if not np.isnan(r['avg_boundary_entropy'])]
-    
-    if not valid_results:
-        logging.error("No valid boundaries detected in the dataset. Terminating analysis.")
+    if not utterance_dirs:
+        logging.error(f"No utterance directories found in {args.data_dir}")
         return
-
-    # Extract paired metrics
-    b_ent = np.array([r['avg_boundary_entropy'] for r in valid_results])
-    nb_ent = np.array([r['avg_non_boundary_entropy'] for r in valid_results])
-    
-    # Statistical Testing
-    t_stat, p_val_t = stats.ttest_rel(b_ent, nb_ent)
-    w_stat, p_val_w = stats.wilcoxon(b_ent, nb_ent)
-    effect_size = cohens_d(b_ent, nb_ent)
-    
-    # Aggregated Summary
-    avg_b = np.mean(b_ent)
-    avg_nb = np.mean(nb_ent)
-    total_boundaries = sum(r['num_boundaries'] for r in valid_results)
-    
-    summary = (
-        "====================================================\n"
-        "   XTTS CODE-SWITCH ATTENTION ENTROPY ANALYSIS      \n"
-        "====================================================\n"
-        f"Analyzed Utterances       : {len(valid_results)}\n"
-        f"Total Detected Boundaries : {total_boundaries}\n"
-        "----------------------------------------------------\n"
-        f"Average Boundary Entropy  : {avg_b:.4f} bits\n"
-        f"Average Non-Bound Entropy : {avg_nb:.4f} bits\n"
-        f"Mean Entropy Difference   : {(avg_b - avg_nb):.4f} bits\n"
-        "----------------------------------------------------\n"
-        f"Paired t-test (p-value)   : {p_val_t:.4e}\n"
-        f"Wilcoxon Rank (p-value)   : {p_val_w:.4e}\n"
-        f"Effect Size (Cohen's d)   : {effect_size:.4f}\n"
-        "====================================================\n"
-    )
-    
-    # Export Text Summary
-    print(summary)
-    with open(os.path.join(args.output_dir, "statistical_summary.txt"), "w") as f:
-        f.write(summary)
         
-    # Export CSV Data
-    csv_path = os.path.join(args.output_dir, "utterance_metrics.csv")
-    with open(csv_path, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(["Utterance", "Num_Boundaries", "Avg_Boundary_Entropy", "Avg_NonBoundary_Entropy"])
-        for r in valid_results:
-            writer.writerow([r['utterance'], r['num_boundaries'], r['avg_boundary_entropy'], r['avg_non_boundary_entropy']])
-            
-    # Generate requested figures
-    generate_figures(valid_results, args.output_dir)
-    logging.info(f"[✓] Analysis complete. All assets saved to ./{args.output_dir}/")
-
-if __name__ == "__main__":
-    main()
-    except Exception as e:
-        logging.warning(f"Native XttsTokenizer load failed: {e}. Attempting HF fallback...")
-        from transformers import AutoTokenizer
-        return AutoTokenizer.from_pretrained(os.path.dirname(config_path))
-
-def classify_token(token_str):
-    """Classifies token into ENGLISH, HINDI, SPECIAL, SPACE, or OTHER."""
-    token_str = token_str.strip()
-    if not token_str:
-        return "SPACE"
-    if re.match(r'^\[[a-zA-Z0-9_]+\]$', token_str):
-        return "SPECIAL"
-    if re.search(r'[\u0900-\u097F]', token_str):
-        return "HINDI"
-    if re.search(r'[a-zA-Z]', token_str):
-        return "ENGLISH"
-    return "OTHER"
-
-def compute_shannon_entropy(prob_dist):
-    """Computes Shannon entropy of a probability distribution."""
-    prob_dist = prob_dist / (np.sum(prob_dist) + 1e-12)
-    return -np.sum(prob_dist * np.log2(prob_dist + 1e-12))
-
-def cohens_d(x, y):
-    """Computes Cohen's d effect size for two paired arrays."""
-    diff = x - y
-    return np.mean(diff) / (np.std(diff, ddof=1) + 1e-12)
-
-# ==========================================
-# CORE ANALYSIS PIPELINE
-# ==========================================
-def analyze_utterance(utterance_dir, tokenizer, window_size=5):
-    """Processes a single utterance folder to extract boundary/non-boundary entropy."""
-    attentions_path = os.path.join(utterance_dir, "generation_attentions.pkl")
-    tokens_path = os.path.join(utterance_dir, "text_tokens.pt")
+    logging.info(f"Found {len(utterance_dirs)} utterances. Commencing analysis...")
     
-    if not (os.path.exists(attentions_path) and os.path.exists(tokens_path)):
-        return None
-        
-    with open(attentions_path, 'rb') as f:
-        attentions = pickle.load(f)
+    results_list = []
     
-    text_tokens = torch.load(tokens_path, map_location='cpu').squeeze().tolist()
-    if not isinstance(text_tokens, list):
-        text_tokens = [text_tokens]
-        
-    num_text_tokens = len(text_tokens)
-    
-    # 1. Decode and Classify Tokens
-    decoded_tokens = [tokenizer.decode([t]) for t in text_tokens]
-    token_classes = [classify_token(t) for t in decoded_tokens]
-    
-    # 2. Detect Language Boundaries (English <-> Hindi)
-    boundaries = []
-    for i in range(1, num_text_tokens):
-        prev_cls = token_classes[i-1]
-        curr_cls = token_classes[i]
-        valid_langs = {"ENGLISH", "HINDI"}
-        if prev_cls in valid_langs and curr_cls in valid_langs and prev_cls != curr_cls:
-            boundaries.append(i)
-            
-    # 3. Reconstruct GenerationStep x KeyPosition matrix (Averaged across heads/layers)
-    num_gen_steps = len(attentions)
-    attn_matrix = np.zeros((num_gen_steps, num_text_tokens))
-    
-    for t_step in range(num_gen_steps):
-        step_attns = attentions[t_step] 
-        num_layers = len(step_attns)
-        layer_avg = 0
-        for layer_idx in range(num_layers):
-            # Shape: (batch, heads, q_len, k_len). We want the last query attending to text keys.
-            attn = step_attns[layer_idx][0].cpu().numpy() 
-            q_attn = attn[:, -1, :num_text_tokens] 
-            layer_avg += np.mean(q_attn, axis=0)
-        
-        layer_avg /= num_layers
-        # Normalize to create a valid probability distribution over text tokens
-        layer_avg /= (np.sum(layer_avg) + 1e-12)
-        attn_matrix[t_step, :] = layer_avg
-
-    # 4. Compute Entropy per Generation Step
-    step_entropies = np.array([compute_shannon_entropy(attn_matrix[t, :]) for t in range(num_gen_steps)])
-    
-    # 5. Map Generation Steps to Text Tokens (via argmax attention)
-    aligned_text_indices = np.argmax(attn_matrix, axis=1)
-    
-    boundary_entropies = []
-    non_boundary_entropies = []
-    
-    for t_step in range(num_gen_steps):
-        focused_token = aligned_text_indices[t_step]
-        
-        # Check if the focused token is within the window of any boundary
-        is_boundary = False
-        for b_idx in boundaries:
-            if abs(focused_token - b_idx) <= window_size:
-                is_boundary = True
-                break
-                
-        if is_boundary:
-            boundary_entropies.append(step_entropies[t_step])
-        else:
-            non_boundary_entropies.append(step_entropies[t_step])
-            
-    return {
-        "utterance": os.path.basename(utterance_dir),
-        "attn_matrix": attn_matrix,
-        "step_entropies": step_entropies,
-        "boundaries": boundaries,
-        "aligned_text_indices": aligned_text_indices,
-        "avg_boundary_entropy": np.mean(boundary_entropies) if boundary_entropies else np.nan,
-        "avg_non_boundary_entropy": np.mean(non_boundary_entropies) if non_boundary_entropies else np.nan,
-        "num_boundaries": len(boundaries)
-    }
-
-# ==========================================
-# VISUALIZATION & EXPORT
-# ==========================================
-def generate_figures(results, output_dir):
-    logging.info("Generating analytical figures...")
-    
-    # Extract clean data for plotting
-    clean_results = [r for r in results if not np.isnan(r['avg_boundary_entropy']) and not np.isnan(r['avg_non_boundary_entropy'])]
-    b_ents = [r['avg_boundary_entropy'] for r in clean_results]
-    nb_ents = [r['avg_non_boundary_entropy'] for r in clean_results]
-    
-    # D. Boundary vs Non-boundary boxplot
-    plt.figure(figsize=(8, 6))
-    sns.boxplot(data=[b_ents, nb_ents], palette="Set2")
-    plt.xticks([0, 1], ["Boundary\n(±5 tokens)", "Non-Boundary"])
-    plt.ylabel("Shannon Entropy (bits)")
-    plt.title("Cross-Attention Entropy Distribution")
-    plt.savefig(os.path.join(output_dir, "entropy_boxplot.png"), dpi=300)
-    plt.close()
-    
-    # E. Histogram of entropy difference
-    plt.figure(figsize=(8, 6))
-    diffs = np.array(b_ents) - np.array(nb_ents)
-    sns.histplot(diffs, bins=30, kde=True, color="purple")
-    plt.axvline(0, color='black', linestyle='--')
-    plt.xlabel("Entropy Difference (Boundary - Non-Boundary)")
-    plt.ylabel("Frequency (Utterances)")
-    plt.title("Distribution of Entropy Differentials")
-    plt.savefig(os.path.join(output_dir, "entropy_difference_hist.png"), dpi=300)
-    plt.close()
-    
-    # A & B. Heatmap and Entropy Curve (Using the first utterance with a boundary as an example)
-    example_res = next((r for r in clean_results if r['num_boundaries'] > 0), None)
-    if example_res:
-        # Heatmap
-        plt.figure(figsize=(12, 8))
-        sns.heatmap(example_res['attn_matrix'].T, cmap="viridis", cbar_kws={'label': 'Attention Weight'})
-        for b_idx in example_res['boundaries']:
-            plt.axhline(b_idx, color='red', linestyle='--', alpha=0.7, label="Code-Switch Boundary")
-        plt.xlabel("Generation Step")
-        plt.ylabel("Text Token Index")
-        plt.title(f"Decoder Attention Mapping: {example_res['utterance']}")
-        plt.savefig(os.path.join(output_dir, f"heatmap_{example_res['utterance']}.png"), dpi=300)
-        plt.close()
-        
-        # Entropy curve
-        plt.figure(figsize=(12, 4))
-        plt.plot(example_res['step_entropies'], label="Step Entropy", color='blue')
-        
-        # Highlight boundary regions
-        for t_step, focus in enumerate(example_res['aligned_text_indices']):
-            if any(abs(focus - b) <= 5 for b in example_res['boundaries']):
-                plt.scatter(t_step, example_res['step_entropies'][t_step], color='red', s=10)
-                
-        plt.xlabel("Generation Step")
-        plt.ylabel("Entropy")
-        plt.title(f"Autoregressive Entropy Trajectory: {example_res['utterance']}")
-        plt.savefig(os.path.join(output_dir, f"entropy_curve_{example_res['utterance']}.png"), dpi=300)
-        plt.close()
-
-# ==========================================
-# MAIN EXECUTION
-# ==========================================
-def main():
-    parser = argparse.ArgumentParser(description="Analyze Code-Switched XTTS Attention Entropy")
-    parser.add_argument("--results_dir", type=str, default="xtts_attention_results", help="Path to XTTS outputs")
-    parser.add_argument("--config_path", type=str, default="/home/spark2/Models/XTTS-v2/config.json", help="XTTS config")
-    parser.add_argument("--output_dir", type=str, default="analysis_results", help="Directory for final analysis assets")
-    parser.add_argument("--window", type=int, default=5, help="Token window around boundary to classify as localized")
-    args = parser.parse_args()
-
-    os.makedirs(args.output_dir, exist_ok=True)
-    tokenizer = load_tokenizer(args.config_path)
-    
-    utterances = [os.path.join(args.results_dir, d) for d in os.listdir(args.results_dir) if os.path.isdir(os.path.join(args.results_dir, d))]
-    utterances.sort()
-    
-    results = []
-    logging.info(f"Starting analysis on {len(utterances)} utterances...")
-    
-    for utt_dir in tqdm(utterances, desc="Processing Utterances"):
-        res = analyze_utterance(utt_dir, tokenizer, window_size=args.window)
+    for u_dir in tqdm(utterance_dirs, desc="Processing Attentions"):
+        res = process_utterance(u_dir, tokenizer, window_size=args.window_size)
         if res is not None:
-            results.append(res)
+            results_list.append(res)
+            # Save the raw numpy matrix for reproducibility
+            np.save(os.path.join(args.output_dir, f"{res['utt_id']}_attn_matrix.npy"), res["matrix"])
             
-    # Filter out samples lacking boundary data
-    valid_results = [r for r in results if not np.isnan(r['avg_boundary_entropy'])]
-    
-    if not valid_results:
-        logging.error("No valid boundaries detected in the dataset. Terminating analysis.")
+    if not results_list:
+        logging.error("No valid code-switched boundaries detected across the dataset.")
         return
-
-    # Extract paired metrics
-    b_ent = np.array([r['avg_boundary_entropy'] for r in valid_results])
-    nb_ent = np.array([r['avg_non_boundary_entropy'] for r in valid_results])
-    
-    # Statistical Testing
-    t_stat, p_val_t = stats.ttest_rel(b_ent, nb_ent)
-    w_stat, p_val_w = stats.wilcoxon(b_ent, nb_ent)
-    effect_size = cohens_d(b_ent, nb_ent)
-    
-    # Aggregated Summary
-    avg_b = np.mean(b_ent)
-    avg_nb = np.mean(nb_ent)
-    total_boundaries = sum(r['num_boundaries'] for r in valid_results)
-    
-    summary = (
-        "====================================================\n"
-        "   XTTS CODE-SWITCH ATTENTION ENTROPY ANALYSIS      \n"
-        "====================================================\n"
-        f"Analyzed Utterances       : {len(valid_results)}\n"
-        f"Total Detected Boundaries : {total_boundaries}\n"
-        "----------------------------------------------------\n"
-        f"Average Boundary Entropy  : {avg_b:.4f} bits\n"
-        f"Average Non-Bound Entropy : {avg_nb:.4f} bits\n"
-        f"Mean Entropy Difference   : {(avg_b - avg_nb):.4f} bits\n"
-        "----------------------------------------------------\n"
-        f"Paired t-test (p-value)   : {p_val_t:.4e}\n"
-        f"Wilcoxon Rank (p-value)   : {p_val_w:.4e}\n"
-        f"Effect Size (Cohen's d)   : {effect_size:.4f}\n"
-        "====================================================\n"
-    )
-    
-    # Export Text Summary
-    print(summary)
-    with open(os.path.join(args.output_dir, "statistical_summary.txt"), "w") as f:
-        f.write(summary)
         
-    # Export CSV Data
-    import csv
-    csv_path = os.path.join(args.output_dir, "utterance_metrics.csv")
-    with open(csv_path, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(["Utterance", "Num_Boundaries", "Avg_Boundary_Entropy", "Avg_NonBoundary_Entropy"])
-        for r in valid_results:
-            writer.writerow([r['utterance'], r['num_boundaries'], r['avg_boundary_entropy'], r['avg_non_boundary_entropy']])
-            
-    # Generate requested figures
-    generate_figures(valid_results, args.output_dir)
-    logging.info(f"[✓] Analysis complete. All assets saved to ./{args.output_dir}/")
+    # 3. Create DataFrame and Compute Stats
+    df = pd.DataFrame([{
+        "utt_id": r["utt_id"],
+        "boundary_entropy": r["boundary_entropy"],
+        "neighbour_entropy": r["neighbour_entropy"],
+        "global_entropy": r["global_entropy"],
+        "num_boundaries": r["num_boundaries"]
+    } for r in results_list])
+    
+    df.to_csv(os.path.join(args.output_dir, "entropy_metrics.csv"), index=False)
+    
+    stats_res = compute_statistics(df)
+    
+    with open(os.path.join(args.output_dir, "statistical_summary.txt"), "w") as f:
+        f.write(json.dumps(stats_res, indent=4))
+        
+    # 4. Generate Figures
+    logging.info("Generating ICASSP figures...")
+    generate_figures(results_list, df, args.output_dir)
+    
+    # 5. Print Final Summary
+    print("\n" + "="*50)
+    print("FINAL ANALYSIS SUMMARY")
+    print("="*50)
+    print(f"Total Utterances Analyzed : {stats_res['total_utterances']}")
+    print(f"Total Boundaries Detected : {stats_res['total_boundaries']}")
+    print(f"Average Boundary Entropy  : {stats_res['avg_boundary']:.4f} bits")
+    print(f"Average Neighbour Entropy : {stats_res['avg_neighbour']:.4f} bits")
+    print(f"Average Global Entropy    : {stats_res['avg_global']:.4f} bits")
+    print("-" * 50)
+    print("STATISTICAL SIGNIFICANCE")
+    print(f"Paired t-test p-value     : {stats_res['p_val_t']:.4e}")
+    print(f"Wilcoxon p-value          : {stats_res['p_val_w']:.4e}")
+    print(f"Effect Size (Cohen's d)   : {stats_res['cohens_d']:.4f}")
+    print("="*50 + "\n")
+    logging.info("Pipeline execution completed successfully.")
 
 if __name__ == "__main__":
     main()

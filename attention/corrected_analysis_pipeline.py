@@ -243,6 +243,10 @@ def process_utterance(utterance_dir, tokenizer):
         for l in range(L):
             last_q_attn = attentions[t][l][0, :, -1, :] # (H, K_total)
             text_keys_attn = last_q_attn[:, audio_cond_len : audio_cond_len + text_len]
+            
+            # Move tensor to CPU and convert to NumPy BEFORE math and assignment
+            text_keys_attn = text_keys_attn.float().cpu().numpy()
+            
             # Normalize over text keys to isolate focus on text
             row_sums = text_keys_attn.sum(axis=1, keepdims=True)
             row_sums[row_sums == 0] = 1.0
@@ -474,34 +478,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-"""
-. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
-  from pkg_resources import resource_filename
-2026-07-31 15:14:54,467 [INFO] Logging initialized. Output directory: ./corrected_analysis_results
-2026-07-31 15:14:54,468 [INFO] Loading XTTS tokenizer from /home/spark2/Models/XTTS-v2/config.json
-2026-07-31 15:14:54,473 [INFO] Extracting un-averaged T x L x H x K matrices and mapping Soft Alignments...
-Traceback (most recent call last):
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/corrected_analysis_pipeline.py", line 476, in <module>
-    main()
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/corrected_analysis_pipeline.py", line 455, in main
-    res = process_utterance(u_dir, tokenizer)
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/corrected_analysis_pipeline.py", line 249, in process_utterance
-    A[t, l, :, :] = text_keys_attn / row_sums
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/torch/_tensor.py", line 1257, in __array__
-    return self.numpy().astype(dtype, copy=False)
-TypeError: can't convert cuda:0 device type tensor to numpy. Use Tensor.cpu() to copy the tensor to host memory first.
-"""
-    # Build 4D Tensor: (T, L, H, K)
-    A = np.zeros((num_gen_steps, L, H, text_len))
-    for t in range(num_gen_steps):
-        for l in range(L):
-            last_q_attn = attentions[t][l][0, :, -1, :] # (H, K_total)
-            text_keys_attn = last_q_attn[:, audio_cond_len : audio_cond_len + text_len]
-            
-            # Move tensor to CPU and convert to NumPy BEFORE math and assignment
-            text_keys_attn = text_keys_attn.float().cpu().numpy()
-            
-            # Normalize over text keys to isolate focus on text
-            row_sums = text_keys_attn.sum(axis=1, keepdims=True)
-            row_sums[row_sums == 0] = 1.0
-            A[t, l, :, :] = text_keys_attn / row_sums

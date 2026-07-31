@@ -83,3 +83,22 @@ result = model.synthesize(
 
     language="en",
 )
+
+"""
+Output:
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 89])
+
+Attention timesteps: 41
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 48, 48])
+"""

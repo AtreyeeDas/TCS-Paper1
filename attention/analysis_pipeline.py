@@ -445,3 +445,30 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+"""
+2026-07-31 14:21:11,475 [INFO] Logging initialized. Results will be saved to ./analysis_results
+2026-07-31 14:21:11,512 [INFO] Loading XTTS tokenizer from /home/spark2/Models/XTTS-v2/config.json
+2026-07-31 14:21:11,517 [INFO] Found 20 utterances. Commencing analysis...
+Processing Attentions: 100%|█████████████████████████████████████████████████████████████████████████████████████████| 20/20 [00:05<00:00,  3.85it/s]
+/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/scipy/stats/_morestats.py:4088: UserWarning: Exact p-value calculation does not work if there are zeros. Switching to normal approximation.
+  warnings.warn("Exact p-value calculation does not work if there are "
+Traceback (most recent call last):
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/analysis_pipeline.py", line 447, in <module>
+    main()
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/analysis_pipeline.py", line 423, in main
+    f.write(json.dumps(stats_res, indent=4))
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/json/encoder.py", line 201, in encode
+    chunks = list(chunks)
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/json/encoder.py", line 431, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/json/encoder.py", line 405, in _iterencode_dict
+    yield from chunks
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/json/encoder.py", line 438, in _iterencode
+    o = _default(o)
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/json/encoder.py", line 179, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type int64 is not JSON serializable
+"""

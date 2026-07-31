@@ -265,6 +265,7 @@ def process_utterance(utterance_dir, tokenizer, window_size=5):
 def compute_statistics(df):
     """
     Performs rigorous statistical testing (Paired t-test, Wilcoxon, Cohen's d).
+    Casts all outputs to native Python types for JSON serialization.
     """
     b_ent = df['boundary_entropy'].to_numpy()
     n_ent = df['neighbour_entropy'].to_numpy()
@@ -280,19 +281,20 @@ def compute_statistics(df):
     effect_size = np.mean(diff) / np.std(diff, ddof=1)
     
     stats_results = {
-        "avg_boundary": np.mean(b_ent),
-        "avg_neighbour": np.mean(n_ent),
-        "avg_global": df['global_entropy'].mean(),
-        "t_stat": t_stat,
-        "p_val_t": p_val_t,
-        "w_stat": w_stat,
-        "p_val_w": p_val_w,
-        "cohens_d": effect_size,
-        "total_boundaries": df['num_boundaries'].sum(),
-        "total_utterances": len(df)
+        "avg_boundary": float(np.mean(b_ent)),
+        "avg_neighbour": float(np.mean(n_ent)),
+        "avg_global": float(df['global_entropy'].mean()),
+        "t_stat": float(t_stat),
+        "p_val_t": float(p_val_t),
+        "w_stat": float(w_stat),
+        "p_val_w": float(p_val_w),
+        "cohens_d": float(effect_size),
+        "total_boundaries": int(df['num_boundaries'].sum()),
+        "total_utterances": int(len(df))
     }
     
     return stats_results
+
 
 
 def generate_figures(results_list, df, output_dir):
@@ -447,60 +449,20 @@ if __name__ == "__main__":
     main()
 
 """
-2026-07-31 14:21:11,475 [INFO] Logging initialized. Results will be saved to ./analysis_results
-2026-07-31 14:21:11,512 [INFO] Loading XTTS tokenizer from /home/spark2/Models/XTTS-v2/config.json
-2026-07-31 14:21:11,517 [INFO] Found 20 utterances. Commencing analysis...
-Processing Attentions: 100%|█████████████████████████████████████████████████████████████████████████████████████████| 20/20 [00:05<00:00,  3.85it/s]
-/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/scipy/stats/_morestats.py:4088: UserWarning: Exact p-value calculation does not work if there are zeros. Switching to normal approximation.
-  warnings.warn("Exact p-value calculation does not work if there are "
-Traceback (most recent call last):
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/analysis_pipeline.py", line 447, in <module>
-    main()
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/analysis_pipeline.py", line 423, in main
-    f.write(json.dumps(stats_res, indent=4))
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/json/__init__.py", line 238, in dumps
-    **kw).encode(obj)
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/json/encoder.py", line 201, in encode
-    chunks = list(chunks)
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/json/encoder.py", line 431, in _iterencode
-    yield from _iterencode_dict(o, _current_indent_level)
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/json/encoder.py", line 405, in _iterencode_dict
-    yield from chunks
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/json/encoder.py", line 438, in _iterencode
-    o = _default(o)
-  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/json/encoder.py", line 179, in default
-    raise TypeError(f'Object of type {o.__class__.__name__} '
-TypeError: Object of type int64 is not JSON serializable
+==================================================
+FINAL ANALYSIS SUMMARY
+==================================================
+Total Utterances Analyzed : 19
+Total Boundaries Detected : 72
+Average Boundary Entropy  : 5.0686 bits
+Average Neighbour Entropy : 5.0685 bits
+Average Global Entropy    : 5.0684 bits
+--------------------------------------------------
+STATISTICAL SIGNIFICANCE
+Paired t-test p-value     : 6.4108e-01
+Wilcoxon p-value          : 3.7775e-01
+Effect Size (Cohen's d)   : 0.1088
+==================================================
+
+2026-07-31 14:24:57,027 [INFO] Pipeline execution completed successfully.
 """
-def compute_statistics(df):
-    """
-    Performs rigorous statistical testing (Paired t-test, Wilcoxon, Cohen's d).
-    Casts all outputs to native Python types for JSON serialization.
-    """
-    b_ent = df['boundary_entropy'].to_numpy()
-    n_ent = df['neighbour_entropy'].to_numpy()
-    
-    # Paired t-test
-    t_stat, p_val_t = stats.ttest_rel(b_ent, n_ent)
-    
-    # Wilcoxon signed-rank test
-    w_stat, p_val_w = stats.wilcoxon(b_ent, n_ent)
-    
-    # Cohen's d
-    diff = b_ent - n_ent
-    effect_size = np.mean(diff) / np.std(diff, ddof=1)
-    
-    stats_results = {
-        "avg_boundary": float(np.mean(b_ent)),
-        "avg_neighbour": float(np.mean(n_ent)),
-        "avg_global": float(df['global_entropy'].mean()),
-        "t_stat": float(t_stat),
-        "p_val_t": float(p_val_t),
-        "w_stat": float(w_stat),
-        "p_val_w": float(p_val_w),
-        "cohens_d": float(effect_size),
-        "total_boundaries": int(df['num_boundaries'].sum()),
-        "total_utterances": int(len(df))
-    }
-    
-    return stats_results

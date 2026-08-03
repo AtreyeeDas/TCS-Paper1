@@ -25,7 +25,9 @@ import librosa
 
 import torch
 import torchaudio
-
+import functools
+# 1. FORCE MONKEY-PATCH: This must run before loading the checkpoint
+torch.load = functools.partial(torch.load, weights_only=False)
 # Optional robust imports
 try:
     import whisper
@@ -282,7 +284,8 @@ def main():
             hook_handle = apply_hook_to_xtts(model, layer, head, mode)
             
             for uid, text in utterances:
-                out_path = os.path.join(dirs[f'audio_{mode[:4]}'], f"{uid}_L{layer}_H{head}_{mode}.wav")
+                #out_path = os.path.join(dirs[f'audio_{mode[:4]}'], f"{uid}_L{layer}_H{head}_{mode}.wav")
+                out_path = os.path.join(dirs.get(f'audio_{mode}', os.path.join(config.OUTPUT_DIR, "audio", mode)), f"{uid}_L{layer}_H{head}_{mode}.wav")
                 
                 # 2. Forward Pass (Under Intervention)
                 try:
@@ -379,14 +382,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-"""
-026-08-03 16:40:06,138 [INFO] Mode: UNIFORM
-Traceback (most recent call last):
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/xtts_intervention_exp.py", line 383, in <module>
-    main()
-  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/xtts_intervention_exp.py", line 287, in main
-    out_path = os.path.join(dirs[f'audio_{mode[:4]}'], f"{uid}_L{layer}_H{head}_{mode}.wav")
-KeyError: 'audio_unif'
-"""
-# Use the full mode name for the directory key, or fallback to direct path construction
-#out_path = os.path.join(dirs.get(f'audio_{mode}', os.path.join(Config.OUTPUT_DIR, "audio", mode)), f"{uid}_L{layer}_H{head}_{mode}.wav")

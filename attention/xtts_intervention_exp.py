@@ -379,3 +379,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+"""
+026-08-03 16:40:06,138 [INFO] Mode: UNIFORM
+Traceback (most recent call last):
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/xtts_intervention_exp.py", line 383, in <module>
+    main()
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/xtts_intervention_exp.py", line 287, in main
+    out_path = os.path.join(dirs[f'audio_{mode[:4]}'], f"{uid}_L{layer}_H{head}_{mode}.wav")
+KeyError: 'audio_unif'
+"""

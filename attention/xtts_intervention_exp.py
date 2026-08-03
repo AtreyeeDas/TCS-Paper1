@@ -388,3 +388,5 @@ Traceback (most recent call last):
     out_path = os.path.join(dirs[f'audio_{mode[:4]}'], f"{uid}_L{layer}_H{head}_{mode}.wav")
 KeyError: 'audio_unif'
 """
+# Use the full mode name for the directory key, or fallback to direct path construction
+#out_path = os.path.join(dirs.get(f'audio_{mode}', os.path.join(Config.OUTPUT_DIR, "audio", mode)), f"{uid}_L{layer}_H{head}_{mode}.wav")

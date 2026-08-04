@@ -382,3 +382,353 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+"""
+(icassp_cstts) spark2@01HW2722098:~/users/intern/Atreyee-Das/ICASSP_Work/implementation$ python xtts_intervention_exp.py
+/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/librosa/core/intervals.py:8: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import resource_filename
+2026-08-04 15:51:26,692 [INFO] Starting XTTS-v2 Causal Intervention Experiment
+2026-08-04 15:51:26,692 [INFO] Loading Whisper for Objective Metrics...
+2026-08-04 15:51:27,829 [INFO] Loading XTTS-v2 from /home/spark2/Models/XTTS-v2
+GPT2InferenceModel has generative capabilities, as `prepare_inputs_for_generation` is explicitly overwritten. However, it doesn't directly inherit from `GenerationMixin`. From 👉v4.50👈 onwards, `PreTrainedModel` will NOT inherit from `GenerationMixin`, and this model will lose the ability to call `generate` and other related functions.
+  - If you're using `trust_remote_code=True`, you can get rid of this warning by loading the model with an auto class. See https://huggingface.co/docs/transformers/en/model_doc/auto#auto-classes
+  - If you are the owner of the model architecture code, please modify your model class such that it inherits from `GenerationMixin` (after `PreTrainedModel`, otherwise you'll get an exception).
+  - If you are not the owner of the model architecture class, please contact the model code owner to update it.
+2026-08-04 15:51:38,249 [INFO] Selected Top 10 heads for causal intervention.
+2026-08-04 15:51:38,249 [INFO] Generating Original Baseline Audio...
+The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+`GPT2SdpaAttention` is used but `torch.nn.functional.scaled_dot_product_attention` does not support `output_attentions=True` or `head_mask`. Falling back to the manual attention implementation, but specifying the manual implementation will be required from Transformers version v5.0.0 onwards. This warning can be removed using the argument `attn_implementation="eager"` when loading the model.
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 262])
+
+Attention timesteps: 161
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 101, 101])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 330])
+
+Attention timesteps: 207
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 123, 123])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 289])
+
+Attention timesteps: 186
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 103, 103])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 251])
+
+Attention timesteps: 166
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 85, 85])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 149])
+
+Attention timesteps: 92
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 57, 57])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 206])
+
+Attention timesteps: 131
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 75, 75])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 228])
+
+Attention timesteps: 148
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 80, 80])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 112])
+
+Attention timesteps: 58
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 54, 54])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 168])
+
+Attention timesteps: 107
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 61, 61])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 281])
+
+Attention timesteps: 187
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 94, 94])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 280])
+
+Attention timesteps: 188
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 92, 92])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 201])
+
+Attention timesteps: 125
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 76, 76])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 238])
+
+Attention timesteps: 161
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 77, 77])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 179])
+
+Attention timesteps: 117
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 62, 62])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 165])
+
+Attention timesteps: 103
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 62, 62])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 250])
+
+Attention timesteps: 157
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 93, 93])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 195])
+
+Attention timesteps: 136
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 59, 59])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 182])
+
+Attention timesteps: 106
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 76, 76])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 256])
+
+Attention timesteps: 170
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 86, 86])
+
+==========================
+GENERATION OUTPUT
+==========================
+<class 'transformers.generation.utils.GenerateDecoderOnlyOutput'>
+
+odict_keys(['sequences', 'scores', 'attentions', 'hidden_states', 'past_key_values'])
+
+Sequences shape: torch.Size([1, 229])
+
+Attention timesteps: 152
+
+Type of first timestep: <class 'tuple'>
+Number of layers: 30
+
+Layer0 shape: torch.Size([1, 16, 77, 77])
+2026-08-04 15:52:25,885 [INFO] --- Intervening on Layer 2, Head 7 ---
+2026-08-04 15:52:25,885 [INFO] Mode: ZERO
+Traceback (most recent call last):
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/xtts_intervention_exp.py", line 384, in <module>
+    main()
+  File "/home/spark2/users/intern/Atreyee-Das/ICASSP_Work/implementation/xtts_intervention_exp.py", line 288, in main
+    out_path = os.path.join(dirs.get(f'audio_{mode}', os.path.join(config.OUTPUT_DIR, "audio", mode)), f"{uid}_L{layer}_H{head}_{mode}.wav")
+  File "/home/spark2/miniconda3/envs/icassp_cstts/lib/python3.10/site-packages/coqpit/coqpit.py", line 626, in __getattribute__
+    value = super().__getattribute__(arg)
+AttributeError: 'XttsConfig' object has no attribute 'OUTPUT_DIR'
+"""
+
+if __name__ == "__main__":
+    main()
